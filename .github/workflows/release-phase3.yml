@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.3.0-phase3
+        default: v0.3.1-phase3
         type: string
 
 permissions:
@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.3.0-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.3.1-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.3.0-phase3' }}
+          ref: ${{ inputs.tag || 'v0.3.1-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -55,7 +55,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.3.0-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.3.1-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -72,11 +72,11 @@ jobs:
 
           Separates normal Refresh from the hourly full-history rebuild. Shows available match count, newest match date, fetch timestamp and whether the provider reported calling Steam. The provider can return incomplete indexed history; a full rebuild requires provider Steam-bot access and does not guarantee complete career totals.
 
-          Automatic match start is still under investigation. Public active matches cover only a limited spectated subset. Continue using Start match and Sync; an optional local event helper needs validation before automatic reminders are enabled.
+          Adds an EXPERIMENTAL optional Overwolf helper for documented match_clock and game_paused events. Open Settings and export a paired helper, then load it using Overwolf development options. Overwolf requires developer whitelisting for unreleased/unpacked apps; this helper is not Appstore-approved. Starts at the first valid live clock sample, follows pauses and match end, pauses on missing events, and preserves manual controls. No overlay, capture, recording, ads or remote requests. Automatic tracking is off until setup. Live Windows game events and FPS/frame-time impact are not verified. No zero-performance-impact claim is made. See README.md and overwolf-helper/README.md for setup and the first-match checklist.
 
           Keeps the editable enabled October 6 timing presets. Customised rules are preserved. Restore defaults resets built-ins while keeping personal reminders and audio preferences.
 
-          Unit, browser and native Electron checks cover analytics, history, persistence, API handling and minimised reminder audio. The Windows runner additionally runs unit tests and builds this ZIP. Use Test sound on your PC to check your audio output. Independent community project; not affiliated with Valve.
+          Unit, browser and native Electron checks cover analytics, history, persistence, API handling and minimised reminder audio. Helper unit/protocol tests and native Electron tests use simulated SDK events, not a running game. The Windows runner additionally runs unit tests and builds this ZIP with helper resources. Use Test sound on your PC to check your audio output. Independent community project; not affiliated with Valve.
           '@ | Set-Content -Encoding utf8NoBOM release/notes.md
           $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
           if ($LASTEXITCODE -eq 0) {

@@ -1,5 +1,15 @@
-import { app, BrowserWindow, ipcMain, powerSaveBlocker, shell } from "electron";
-import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  powerSaveBlocker,
+  shell,
+  dialog,
+} from "electron";
+import { readFile, writeFile, mkdir, rename, cp } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { MatchDetection } from "../src/core/detection.js";
+import { startOverwolfServer, HELPER_PORT } from "./overwolf-server.js";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { ApiClient } from "../src/core/api.js";
@@ -19,6 +29,8 @@ else {
   let blocker: number | undefined;
   let settings: Settings = structuredClone(defaultSettings);
   let engine: TimerEngine;
+  let detection: MatchDetection;
+  let helperServer: Awaited<ReturnType<typeof startOverwolfServer>> | undefined;
   let saveQueue = Promise.resolve();
   const atomicWrite = (path: string, contents: string) => {
     const task = saveQueue.then(async () => {
@@ -39,10 +51,10 @@ else {
   };
   const sendAlerts = (alerts: Alert[]) =>
     alerts.forEach((a) => window?.webContents.send("timer:alert", a));
-  const power = () => {
-    if (engine.snapshot().status === "running" && blocker === undefined)
+  const power = (status = engine.snapshot().status) => {
+    if (status === "running" && blocker === undefined)
       blocker = powerSaveBlocker.start("prevent-app-suspension");
-    else if (engine.snapshot().status !== "running" && blocker !== undefined) {
+    else if (status !== "running" && blocker !== undefined) {
       powerSaveBlocker.stop(blocker);
       blocker = undefined;
     }
@@ -101,6 +113,77 @@ else {
         return api.request(raw);
       });
       engine = new TimerEngine(settings);
+      detection = new MatchDetection(engine);
+      let token: string;
+      const pairingFile = join(dataRoot, "overwolf-pairing.json");
+      try {
+        const stored = JSON.parse(await readFile(pairingFile, "utf8"));
+        if (!/^[a-f0-9]{64}$/.test(stored.token))
+          throw new Error("Invalid pairing key");
+        token = stored.token;
+      } catch {
+        token = randomBytes(32).toString("hex");
+        await mkdir(dataRoot, { recursive: true });
+        await writeFile(pairingFile, JSON.stringify({ token }), {
+          mode: 0o600,
+        });
+      }
+      let serverQueue = Promise.resolve();
+      const reconcileHelper = () => {
+        detection.configure(settings.automaticTracking);
+        serverQueue = serverQueue.then(async () => {
+          if (!settings.automaticTracking && helperServer) {
+            await helperServer.close();
+            helperServer = undefined;
+          }
+          if (settings.automaticTracking && !helperServer) {
+            try {
+              helperServer = await startOverwolfServer(token, detection);
+            } catch {
+              detection.error(
+                "Local helper connection unavailable — use manual controls or restart the app",
+              );
+            }
+          }
+        });
+        return serverQueue;
+      };
+      await reconcileHelper();
+      const snapshot = () => ({
+        ...engine.snapshot(),
+        detection: detection.snapshot(),
+      });
+      ipcMain.handle("overwolf:resume", (event) => {
+        trusted(event);
+        detection.resume();
+      });
+      ipcMain.handle("overwolf:export", async (event) => {
+        trusted(event);
+        if (!window) return null;
+        const selection = await dialog.showOpenDialog(window, {
+          title: "Choose where to save the Overwolf helper",
+          properties: ["openDirectory", "createDirectory"],
+        });
+        if (selection.canceled) return null;
+        const folder = join(
+          selection.filePaths[0],
+          `Deadlock Companion Helper ${Date.now()}`,
+        );
+        const source = app.isPackaged
+          ? join(process.resourcesPath, "overwolf-helper")
+          : join(here, "../../overwolf-helper");
+        await cp(source, folder, {
+          recursive: true,
+          errorOnExist: true,
+          force: false,
+        });
+        await writeFile(
+          join(folder, "config.js"),
+          `window.HELPER_CONFIG = ${JSON.stringify({ endpoint: `ws://127.0.0.1:${HELPER_PORT}/timer`, token })};\n`,
+          { mode: 0o600 },
+        );
+        return folder;
+      });
       ipcMain.handle("settings:load", (event) => {
         trusted(event);
         return settings;
@@ -112,18 +195,20 @@ else {
         sendAlerts(engine.tick());
         engine.updateSettings(next);
         settings = next;
+        await reconcileHelper();
         return next;
       });
       ipcMain.handle("timer:get", (event) => {
         trusted(event);
-        return engine.snapshot();
+        return snapshot();
       });
       ipcMain.handle("timer:command", (event, raw) => {
         trusted(event);
         sendAlerts(engine.tick());
-        const result = engine.command(raw);
+        engine.command(raw);
+        detection.manual(raw);
         power();
-        return result;
+        return snapshot();
       });
       const productionUrl = pathToFileURL(
         join(here, "../../dist/index.html"),
@@ -166,8 +251,11 @@ else {
       };
       createWindow();
       setInterval(() => {
+        detection.check();
         sendAlerts(engine.tick());
-        window?.webContents.send("timer:state", engine.snapshot());
+        const state = snapshot();
+        power(state.status);
+        window?.webContents.send("timer:state", state);
       }, 200);
       app.on("activate", () => {
         if (!window) createWindow();

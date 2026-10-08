@@ -91,6 +91,8 @@ export default function App() {
   const [confirmDefaults, setConfirmDefaults] = useState(false);
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [helperFolder, setHelperFolder] = useState("");
+  const [exportingHelper, setExportingHelper] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let disposed = false;
@@ -141,6 +143,21 @@ export default function App() {
   };
   const change = (patch: Partial<Settings>) => {
     void save({ ...settings, ...patch }).catch((e) => setError(e.message));
+  };
+  const exportHelper = async () => {
+    setExportingHelper(true);
+    try {
+      await save({ ...settings, automaticTracking: true });
+      const folder = await bridge.exportOverwolfHelper();
+      if (folder) {
+        setHelperFolder(folder);
+        setNotice("Paired helper exported");
+      }
+    } catch (error) {
+      setError(errorMessage(error));
+    } finally {
+      setExportingHelper(false);
+    }
   };
   const command = async (c: TimerCommand) => {
     try {
@@ -431,7 +448,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.3.0 · Independent community tool</span>
+          <span className="version">v0.3.1 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -533,7 +550,13 @@ export default function App() {
                       </div>
                       <div className="clock-stage">
                         <div className="clock-orbit" />
-                        <span className="clock-ticks">MANUAL SYNC</span>
+                        <span className="clock-ticks">
+                          {settings.automaticTracking &&
+                          timer.detection?.connected &&
+                          !timer.detection.manualOverride
+                            ? "OVERWOLF CLOCK"
+                            : "MANUAL SYNC"}
+                        </span>
                         <div
                           className="match-clock"
                           aria-label="Match clock"
@@ -545,6 +568,12 @@ export default function App() {
                           YOUR MATCH. YOUR PACE.
                         </span>
                       </div>
+                      {settings.automaticTracking && (
+                        <p className="detection-status">
+                          {timer.detection?.message ??
+                            "Automatic tracking requires the desktop app"}
+                        </p>
+                      )}
                       <div className="clock-buttons">
                         <button
                           className="button primary large"
@@ -780,6 +809,74 @@ export default function App() {
               )}
               {page === "Settings" && (
                 <>
+                  <section className="panel settings-panel automatic-panel">
+                    <h2>Automatic match tracking</h2>
+                    <p>
+                      Experimental Overwolf helper. Follows Deadlock’s clock and
+                      pause events. No overlay or recording; performance impact
+                      must be checked on your PC.
+                    </p>
+                    <label className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={settings.automaticTracking}
+                        disabled={busy || !isDesktop}
+                        onChange={(e) =>
+                          change({ automaticTracking: e.target.checked })
+                        }
+                      />
+                      Enable automatic match tracking
+                    </label>
+                    <p className="detection-status">
+                      {timer.detection?.message ??
+                        (isDesktop
+                          ? "Automatic tracking is off"
+                          : "Open the desktop app to use Overwolf")}
+                    </p>
+                    <div className="history-controls">
+                      <button
+                        className="button secondary small"
+                        disabled={!isDesktop || busy || exportingHelper}
+                        onClick={() => void exportHelper()}
+                      >
+                        {exportingHelper
+                          ? "Exporting…"
+                          : "Export paired helper"}
+                      </button>
+                      <button
+                        className="button secondary small"
+                        disabled={!isDesktop || !settings.automaticTracking}
+                        onClick={() =>
+                          void bridge
+                            .resumeAutomaticTracking()
+                            .catch((e) => setError(errorMessage(e)))
+                        }
+                      >
+                        Resume automatic tracking
+                      </button>
+                    </div>
+                    <p>
+                      Install Overwolf, then load the exported folder using its
+                      “Load unpacked extension” development option. Keep the
+                      helper and this app running before your match. The first
+                      live clock sample starts reminders. Overwolf requires
+                      developer whitelisting for this unpacked helper. It has
+                      not been approved for the Overwolf Appstore.
+                    </p>
+                    {helperFolder && (
+                      <p className="helper-folder">
+                        Helper folder: {helperFolder}
+                        <br />
+                        Keep this folder private; it contains your pairing key.
+                      </p>
+                    )}
+                    <p>
+                      Manual Start/Pause/Stop/Reset/Sync takes control for the
+                      current match. Resume automatic tracking hands control
+                      back at the next fresh clock sample. Missing clock events
+                      pause automatic reminders.
+                    </p>
+                  </section>
                   <div className="settings-grid">
                     <section className="panel settings-panel">
                       <div className="section-heading">

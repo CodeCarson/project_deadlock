@@ -45,6 +45,10 @@ function browserBridge(): Bridge {
   };
   setInterval(tick, 200);
   return {
+    async exportOverwolfHelper() {
+      throw new Error("Open the desktop app to set up Overwolf.");
+    },
+    async resumeAutomaticTracking() {},
     request: (request) => api.request(request),
     async loadSettings() {
       return settings;

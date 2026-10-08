@@ -2302,3 +2302,14 @@ main {
     padding: 16px;
   }
 }
+.automatic-panel {
+  margin-bottom: 24px;
+}
+.detection-status {
+  color: #b69ddf;
+  font-size: 13px;
+  padding: 0 16px;
+}
+.helper-folder {
+  overflow-wrap: anywhere;
+}

@@ -65,6 +65,7 @@ export const settingsSchema = z
     volume: z.number().min(0).max(1),
     sound: z.enum(["chime", "pulse", "bell"]),
     speech: z.boolean(),
+    automaticTracking: z.boolean().default(false),
     compact: z.boolean(),
     warnings: z.array(z.number().int().min(1).max(300)).max(5),
     rules: z.array(ruleSchema).max(100),
@@ -108,6 +109,13 @@ export interface TimerSnapshot {
   upcoming: Occurrence[];
   cleared: Record<string, number>;
   log: Alert[];
+  detection?: {
+    connected: boolean;
+    message: string;
+    matchId?: string;
+    lastClockAt?: number;
+    manualOverride: boolean;
+  };
 }
 export type TimerCommand =
   | { type: "start" | "pause" | "stop" | "reset" }
@@ -122,6 +130,8 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
 ]);
 export interface Bridge {
+  exportOverwolfHelper(): Promise<string | null>;
+  resumeAutomaticTracking(): Promise<void>;
   request(request: ApiRequest): Promise<ApiResult>;
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;

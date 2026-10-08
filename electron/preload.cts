@@ -7,6 +7,8 @@ import type {
   TimerCommand,
 } from "../src/core/schema.js";
 const bridge: Bridge = {
+  exportOverwolfHelper: () => ipcRenderer.invoke("overwolf:export"),
+  resumeAutomaticTracking: () => ipcRenderer.invoke("overwolf:resume"),
   request: (request) => ipcRenderer.invoke("api:request", request),
   loadSettings: () => ipcRenderer.invoke("settings:load"),
   saveSettings: (settings: Settings) =>

@@ -34,6 +34,13 @@ export class TimerEngine {
         : 0)
     );
   }
+  /** Authoritative local clock samples preserve notification boundaries between ticks. */
+  followClock(seconds: number, paused: boolean, rebase: boolean) {
+    this.base = seconds;
+    this.anchor = this.now();
+    if (rebase) this.previous = seconds;
+    this.status = paused ? "paused" : "running";
+  }
   private occurrences(rule: Rule, from: number, to: number): Occurrence[] {
     if (!rule.enabled || !rule.confirmed) return [];
     const result: Occurrence[] = [];
