@@ -29,6 +29,12 @@ import {
   type Rank,
 } from "../core/api";
 import { z } from "zod";
+import type { Settings } from "../core/schema";
+import {
+  HeroAnalytics,
+  MatchHistory,
+  PerformanceCharts,
+} from "./AnalyticsViews";
 import { formatClock } from "../core/timer";
 
 interface PlayerData {
@@ -50,7 +56,13 @@ const number = (value: number | null, digits = 0) =>
 export function PlayerDashboard({
   accountId,
   onAccountChange,
+  view = "Dashboard",
+  savedFilters = { hero: "all", mode: "all", days: "all" },
+  onFiltersChange,
 }: {
+  view?: "Dashboard" | "Heroes" | "Match History";
+  savedFilters?: Settings["playerFilters"];
+  onFiltersChange?: (filters: Settings["playerFilters"]) => void;
   accountId: string;
   onAccountChange: (id: string) => Promise<void>;
 }) {
@@ -58,11 +70,20 @@ export function PlayerDashboard({
     [data, setData] = useState<PlayerData>(),
     [loading, setLoading] = useState(false),
     [error, setError] = useState("");
-  const [hero, setHero] = useState("all"),
-    [mode, setMode] = useState("all"),
-    [days, setDays] = useState("all");
+  const [hero, setHero] = useState(savedFilters.hero),
+    [mode, setMode] = useState(savedFilters.mode),
+    [days, setDays] = useState<Settings["playerFilters"]["days"]>(
+      savedFilters.days,
+    );
   const generation = useRef(0);
-  const load = async (id: number, refresh = false) => {
+  const setFilters = (patch: Partial<Settings["playerFilters"]>) => {
+    const next = { hero, mode, days, ...patch };
+    setHero(next.hero);
+    setMode(next.mode);
+    setDays(next.days);
+    onFiltersChange?.(next);
+  };
+  const load = async (id: number, refresh = false, forceRefetch = false) => {
     const request = ++generation.current;
     setLoading(true);
     setError("");
@@ -77,6 +98,7 @@ export function PlayerDashboard({
             accountId:
               resource === "heroes" || resource === "ranks" ? undefined : id,
             refresh,
+            forceRefetch: resource === "history" && forceRefetch,
           }),
         ),
       ),
@@ -133,9 +155,9 @@ export function PlayerDashboard({
   };
   useEffect(() => {
     setInput(accountId);
-    setHero("all");
-    setMode("all");
-    setDays("all");
+    setHero(savedFilters.hero);
+    setMode(savedFilters.mode);
+    setDays(savedFilters.days);
     if (accountId) void load(Number(accountId));
     else setData(undefined);
     return () => {
@@ -299,10 +321,10 @@ export function PlayerDashboard({
                   ? "OFFLINE CACHE"
                   : data.historyResult.cached
                     ? "CACHED DATA"
-                    : "LIVE API DATA"}
+                    : "API RESPONSE"}
               </span>
               <small>
-                Updated{" "}
+                Fetched{" "}
                 {new Date(data.historyResult.fetchedAt).toLocaleString()}
               </small>
               <button
@@ -314,6 +336,41 @@ export function PlayerDashboard({
                 {loading ? "Refreshing…" : "Refresh"}
               </button>
             </div>
+          </section>
+          <section className="panel freshness-panel">
+            <strong>
+              {data.history.length} available matches · newest match{" "}
+              {data.history[0]
+                ? new Date(data.history[0].start_time * 1000).toLocaleString()
+                : "unavailable"}
+            </strong>
+            <p>
+              {data.historyResult.historySource === "steam"
+                ? "The provider attempted a Steam-history fetch. This does not guarantee complete career history."
+                : data.historyResult.historySource === "stored"
+                  ? "The provider returned indexed history without calling Steam. This can omit recent games and does not represent your career total."
+                  : "The provider did not report whether it fetched Steam history. Fetch time alone does not establish that every match is included."}
+            </p>
+            <p>
+              Normal Refresh checks for updates. A full rebuild requests older
+              Steam records too, needs provider bot access, and is limited to
+              once per hour. See the provider’s{" "}
+              <a
+                href="https://api.deadlock-api.com/docs"
+                target="_blank"
+                rel="noreferrer"
+              >
+                match-history documentation
+              </a>{" "}
+              for bot access; provider subscriptions may be required.
+            </p>
+            <button
+              className="button secondary small"
+              disabled={loading}
+              onClick={() => void load(data.accountId, true, true)}
+            >
+              Rebuild full history
+            </button>
           </section>
           {data.warnings.length > 0 && (
             <div className="banner info-banner">
@@ -332,7 +389,7 @@ export function PlayerDashboard({
               <select
                 aria-label="Filter by hero"
                 value={hero}
-                onChange={(e) => setHero(e.target.value)}
+                onChange={(e) => setFilters({ hero: e.target.value })}
               >
                 <option value="all">All heroes</option>
                 {[...new Set(data.history.map((m) => m.hero_id))].map((id) => (
@@ -347,7 +404,7 @@ export function PlayerDashboard({
               <select
                 aria-label="Filter by game mode"
                 value={mode}
-                onChange={(e) => setMode(e.target.value)}
+                onChange={(e) => setFilters({ mode: e.target.value })}
               >
                 <option value="all">All modes</option>
                 {[
@@ -370,7 +427,11 @@ export function PlayerDashboard({
               <select
                 aria-label="Filter by time period"
                 value={days}
-                onChange={(e) => setDays(e.target.value)}
+                onChange={(e) =>
+                  setFilters({
+                    days: e.target.value as Settings["playerFilters"]["days"],
+                  })
+                }
               >
                 <option value="all">All available</option>
                 <option value="7">Last 7 days</option>
@@ -422,130 +483,145 @@ export function PlayerDashboard({
             filters, which may not include your full career. KDA = (kills +
             assists) / max(1, deaths).
           </p>
-          {!filtered.length ? (
-            <section className="panel player-empty compact-empty">
-              <Swords size={26} />
-              <h2>
-                {data.history.length
-                  ? "No matches match these filters."
-                  : "No public matches available yet."}
-              </h2>
-              <p>
-                {data.history.length
-                  ? "Try a different hero, mode, or period."
-                  : "Check your account ID and try Refresh later. Private or unindexed data may be unavailable."}
-              </p>
-            </section>
-          ) : (
-            <div className="performance-grid">
-              <section className="panel hero-performance">
-                <div className="section-heading">
-                  <div>
-                    <h2>Hero performance</h2>
-                    <p>Win rates across your filtered matches.</p>
-                  </div>
-                  <Swords size={19} className="muted" />
-                </div>
-                {heroes.slice(0, 8).map((h) => (
-                  <div className="hero-stat-row" key={h.heroId}>
-                    <div className="hero-portrait">
-                      {heroImage(h.heroId) ? (
-                        <img
-                          src={heroImage(h.heroId)}
-                          alt=""
-                          onError={(e) => {
-                            e.currentTarget.hidden = true;
-                          }}
-                        />
-                      ) : (
-                        <Swords size={17} />
-                      )}
-                    </div>
-                    <div className="hero-stat-name">
-                      <strong>{heroName(h.heroId)}</strong>
-                      <small>
-                        {h.count} matches · {number(h.kda, 2)} KDA
-                      </small>
-                    </div>
-                    <div className="hero-winrate">
-                      <strong>
-                        {h.winRate === null ? "—" : `${number(h.winRate, 1)}%`}
-                      </strong>
-                      <span>
-                        <i style={{ width: `${h.winRate ?? 0}%` }} />
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {heroes.length > 8 && (
-                  <p className="muted">
-                    Showing the eight most-played heroes in this view.
-                  </p>
-                )}
+          {view !== "Match History" && (
+            <PerformanceCharts matches={filtered} ranks={data.ranks} />
+          )}
+          {view === "Heroes" && (
+            <HeroAnalytics matches={filtered} heroes={data.heroes} />
+          )}
+          {view === "Match History" && (
+            <MatchHistory matches={filtered} heroes={data.heroes} />
+          )}
+          {view === "Dashboard" &&
+            (!filtered.length ? (
+              <section className="panel player-empty compact-empty">
+                <Swords size={26} />
+                <h2>
+                  {data.history.length
+                    ? "No matches match these filters."
+                    : "No public matches available yet."}
+                </h2>
+                <p>
+                  {data.history.length
+                    ? "Try a different hero, mode, or period."
+                    : "Check your account ID and try Refresh later. Private or unindexed data may be unavailable."}
+                </p>
               </section>
-              <section className="panel recent-matches">
-                <div className="section-heading">
-                  <div>
-                    <h2>Recent results</h2>
-                    <p>Your latest available matches.</p>
+            ) : (
+              <div className="performance-grid">
+                <section className="panel hero-performance">
+                  <div className="section-heading">
+                    <div>
+                      <h2>Hero performance</h2>
+                      <p>Win rates across your filtered matches.</p>
+                    </div>
+                    <Swords size={19} className="muted" />
                   </div>
-                  <Crosshair size={19} className="muted" />
-                </div>
-                <div className="recent-list">
-                  {filtered.slice(0, 8).map((m) => (
-                    <details
-                      key={m.match_id}
-                      className={`recent-match ${outcome(m)}`}
-                    >
-                      <summary>
-                        <span className="result-indicator">
-                          {outcome(m) === "win"
-                            ? "W"
-                            : outcome(m) === "loss"
-                              ? "L"
-                              : "—"}
-                        </span>
-                        <div>
-                          <strong>{heroName(m.hero_id)}</strong>
-                          <small>
-                            {new Date(m.start_time * 1000).toLocaleDateString()}{" "}
-                            ·{" "}
-                            {m.game_mode !== null && m.game_mode !== undefined
-                              ? gameModeName(m.game_mode)
-                              : "Mode unavailable"}
-                          </small>
-                        </div>
-                        <span className="match-kda">
-                          {number(m.player_kills)} / {number(m.player_deaths)} /{" "}
-                          {number(m.player_assists)}
-                        </span>
-                        <span className="match-duration">
-                          {m.match_duration_s === null
+                  {heroes.slice(0, 8).map((h) => (
+                    <div className="hero-stat-row" key={h.heroId}>
+                      <div className="hero-portrait">
+                        {heroImage(h.heroId) ? (
+                          <img
+                            src={heroImage(h.heroId)}
+                            alt=""
+                            onError={(e) => {
+                              e.currentTarget.hidden = true;
+                            }}
+                          />
+                        ) : (
+                          <Swords size={17} />
+                        )}
+                      </div>
+                      <div className="hero-stat-name">
+                        <strong>{heroName(h.heroId)}</strong>
+                        <small>
+                          {h.count} matches · {number(h.kda, 2)} KDA
+                        </small>
+                      </div>
+                      <div className="hero-winrate">
+                        <strong>
+                          {h.winRate === null
                             ? "—"
-                            : formatClock(m.match_duration_s)}
-                        </span>
-                        <ArrowRight size={12} />
-                      </summary>
-                      <div className="match-detail-grid">
+                            : `${number(h.winRate, 1)}%`}
+                        </strong>
                         <span>
-                          Match ID<strong>{m.match_id}</strong>
-                        </span>
-                        <span>
-                          Final net worth<strong>{number(m.net_worth)}</strong>
-                        </span>
-                        <span>
-                          Last hits<strong>{number(m.last_hits)}</strong>
-                        </span>
-                        <span>
-                          Denies<strong>{number(m.denies)}</strong>
+                          <i style={{ width: `${h.winRate ?? 0}%` }} />
                         </span>
                       </div>
-                    </details>
+                    </div>
                   ))}
-                </div>
-              </section>
-            </div>
-          )}
+                  {heroes.length > 8 && (
+                    <p className="muted">
+                      Showing the eight most-played heroes in this view.
+                    </p>
+                  )}
+                </section>
+                <section className="panel recent-matches">
+                  <div className="section-heading">
+                    <div>
+                      <h2>Recent results</h2>
+                      <p>Your latest available matches.</p>
+                    </div>
+                    <Crosshair size={19} className="muted" />
+                  </div>
+                  <div className="recent-list">
+                    {filtered.slice(0, 8).map((m) => (
+                      <details
+                        key={m.match_id}
+                        className={`recent-match ${outcome(m)}`}
+                      >
+                        <summary>
+                          <span className="result-indicator">
+                            {outcome(m) === "win"
+                              ? "W"
+                              : outcome(m) === "loss"
+                                ? "L"
+                                : "—"}
+                          </span>
+                          <div>
+                            <strong>{heroName(m.hero_id)}</strong>
+                            <small>
+                              {new Date(
+                                m.start_time * 1000,
+                              ).toLocaleDateString()}{" "}
+                              ·{" "}
+                              {m.game_mode !== null && m.game_mode !== undefined
+                                ? gameModeName(m.game_mode)
+                                : "Mode unavailable"}
+                            </small>
+                          </div>
+                          <span className="match-kda">
+                            {number(m.player_kills)} / {number(m.player_deaths)}{" "}
+                            / {number(m.player_assists)}
+                          </span>
+                          <span className="match-duration">
+                            {m.match_duration_s === null
+                              ? "—"
+                              : formatClock(m.match_duration_s)}
+                          </span>
+                          <ArrowRight size={12} />
+                        </summary>
+                        <div className="match-detail-grid">
+                          <span>
+                            Match ID<strong>{m.match_id}</strong>
+                          </span>
+                          <span>
+                            Final net worth
+                            <strong>{number(m.net_worth)}</strong>
+                          </span>
+                          <span>
+                            Last hits<strong>{number(m.last_hits)}</strong>
+                          </span>
+                          <span>
+                            Denies<strong>{number(m.denies)}</strong>
+                          </span>
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            ))}
         </>
       )}
     </div>

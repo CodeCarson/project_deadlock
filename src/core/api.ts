@@ -51,6 +51,7 @@ export const apiRequestSchema = z.object({
   resource: z.enum(["history", "profile", "card", "heroes", "ranks"]),
   accountId: z.number().int().min(1).max(4294967295).optional(),
   refresh: z.boolean().optional(),
+  forceRefetch: z.boolean().optional(),
 });
 export type ApiRequest = z.infer<typeof apiRequestSchema>;
 export interface ApiResult {
@@ -59,12 +60,15 @@ export interface ApiResult {
   cached: boolean;
   stale: boolean;
   warning?: string;
+  historySource?: "steam" | "stored" | "unknown";
 }
 export const CACHE_VERSION = 1;
 export interface CacheEntry {
   version: typeof CACHE_VERSION;
   data: unknown;
   fetchedAt: number;
+  historySource?: "steam" | "stored" | "unknown";
+  forceFetchedAt?: number;
 }
 export interface CacheStore {
   get(key: string): Promise<unknown>;
@@ -74,6 +78,8 @@ const cacheSchema = z.object({
   version: z.literal(CACHE_VERSION),
   data: z.unknown(),
   fetchedAt: z.number().finite().nonnegative(),
+  historySource: z.enum(["steam", "stored", "unknown"]).optional(),
+  forceFetchedAt: z.number().finite().nonnegative().optional(),
 });
 export function validateResource(
   resource: ApiRequest["resource"],
@@ -132,7 +138,7 @@ export function apiPath(raw: ApiRequest) {
   if (!request.accountId) throw new Error("A player account ID is required.");
   switch (request.resource) {
     case "history":
-      return `/v1/players/${request.accountId}/match-history${request.refresh ? "?force_refetch=true" : ""}`;
+      return `/v1/players/${request.accountId}/match-history${request.forceRefetch ? "?force_refetch=true" : ""}`;
     case "profile":
       return `/v1/players/steam?account_ids=${request.accountId}${request.refresh ? "&refresh=true" : ""}`;
     case "card":
@@ -178,11 +184,30 @@ export class ApiClient {
       request.resource === "heroes" || request.resource === "ranks"
         ? 86400000
         : 300000;
-    if (cached && !request.refresh && this.now() - cached.fetchedAt < ttl)
+    if (
+      cached &&
+      !request.refresh &&
+      !request.forceRefetch &&
+      this.now() - cached.fetchedAt < ttl
+    )
       return { ...cached, cached: true, stale: false };
-    // Prevent repeated Steam history force-refetches when Refresh is clicked rapidly.
+    // Keep the provider's hourly full-rebuild limit across app restarts.
+    if (
+      request.resource === "history" &&
+      request.forceRefetch &&
+      cached?.forceFetchedAt !== undefined &&
+      this.now() - cached.forceFetchedAt < 3600000
+    )
+      return {
+        ...cached,
+        cached: true,
+        stale: false,
+        warning:
+          "Full history rebuild is limited to once per hour. Use normal Refresh for recent matches.",
+      };
     if (
       request.refresh &&
+      !request.forceRefetch &&
       cached &&
       this.now() - (this.refreshing.get(key) ?? -Infinity) < 30000
     )
@@ -198,12 +223,20 @@ export class ApiClient {
         {
           signal: AbortSignal.timeout(15000),
           headers: { Accept: "application/json" },
+          cache:
+            request.refresh || request.forceRefetch ? "no-store" : "default",
         },
       );
-      if (!response.ok) {
+      const storedFallback =
+        response.status === 429 &&
+        request.resource === "history" &&
+        !request.forceRefetch;
+      if (!response.ok && !storedFallback) {
         if (response.status === 429)
           throw new Error(
-            "Deadlock API rate limit reached. Please wait a minute before refreshing.",
+            request.forceRefetch
+              ? "The API's hourly full-history limit was reached. Use normal Refresh or wait an hour."
+              : "Deadlock API rate limit reached. Please wait before refreshing.",
           );
         if (response.status === 404)
           throw new Error("No public data was found for this account yet.");
@@ -217,6 +250,10 @@ export class ApiClient {
       try {
         data = this.validate(request, await response.json());
       } catch {
+        if (storedFallback)
+          throw new Error(
+            "Deadlock API rate limit reached. Please wait before refreshing.",
+          );
         throw new Error(
           "The API returned an incompatible response. Your saved data has been kept.",
         );
@@ -225,15 +262,32 @@ export class ApiClient {
         version: CACHE_VERSION,
         data,
         fetchedAt: this.now(),
+        historySource:
+          request.resource === "history"
+            ? response.headers.get("Called-Steam") === "true"
+              ? "steam"
+              : response.headers.get("Called-Steam") === "false" ||
+                  storedFallback
+                ? "stored"
+                : "unknown"
+            : undefined,
+        forceFetchedAt:
+          request.forceRefetch && request.resource === "history"
+            ? this.now()
+            : cached?.forceFetchedAt,
       };
       this.refreshing.set(key, this.now());
-      let warning: string | undefined;
+      let warning: string | undefined = storedFallback
+        ? "Provider rate limit reached; showing its stored history rather than a fresh Steam response."
+        : undefined;
       try {
         await this.cache.set(key, entry);
       } catch {
-        warning = "Loaded live data, but could not save the offline cache.";
+        warning = [warning, "The app could not save the offline cache."]
+          .filter(Boolean)
+          .join(" ");
       }
-      return { ...entry, cached: false, stale: false, warning };
+      return { ...entry, cached: false, stale: storedFallback, warning };
     } catch (error) {
       const message =
         error instanceof Error

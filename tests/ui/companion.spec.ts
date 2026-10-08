@@ -44,11 +44,14 @@ test("navigation, timer sync, audio, reminder delivery and persistence", async (
   await page
     .getByRole("button", { name: "Match History", exact: true })
     .click();
-  await expect(page.getByText("PLANNED FOR A LATER PHASE")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Match History", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Heroes", exact: true }).click();
   await expect(
     page.getByRole("heading", {
-      name: "Know your heroes. Master your matches.",
+      name: "Heroes",
+      exact: true,
     }),
   ).toBeVisible();
   expect(errors).toEqual([]);

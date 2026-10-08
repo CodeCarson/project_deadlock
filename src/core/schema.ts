@@ -55,6 +55,13 @@ export const settingsSchema = z
         "Invalid Steam account ID.",
       )
       .default(""),
+    playerFilters: z
+      .object({
+        hero: z.string(),
+        mode: z.string(),
+        days: z.enum(["all", "7", "30", "90"]),
+      })
+      .default({ hero: "all", mode: "all", days: "all" }),
     volume: z.number().min(0).max(1),
     sound: z.enum(["chime", "pulse", "bell"]),
     speech: z.boolean(),

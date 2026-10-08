@@ -144,9 +144,16 @@ test("production app, native persistence, minimized scheduling and audio generat
     await expect(
       page.getByRole("heading", { name: "Native API test", exact: true }),
     ).toBeVisible();
+    await expect(page.getByText("API RESPONSE", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Heroes", exact: true }).click();
+    await page.getByLabel("Filter by hero").selectOption("1");
     await expect(
-      page.getByText("LIVE API DATA", { exact: true }),
+      page.getByRole("heading", { name: "Hero analytics", exact: true }),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Match History", exact: true })
+      .click();
+    await expect(page.locator(".history-match")).toHaveCount(1);
     const rejected = await page.evaluate(async () => {
       try {
         await window.companion!.request({ resource: "filesystem" } as never);
@@ -167,6 +174,9 @@ test("production app, native persistence, minimized scheduling and audio generat
     expect(JSON.parse(await readFile(settingsFile, "utf8")).accountId).toBe(
       "1234",
     );
+    expect(
+      JSON.parse(await readFile(settingsFile, "utf8")).playerFilters.hero,
+    ).toBe("1");
     const cached = JSON.parse(
       await readFile(
         join(settingsFile, "../api-cache/history-1234.json"),
@@ -187,6 +197,7 @@ test("production app, native persistence, minimized scheduling and audio generat
     await expect(
       reopened.getByText("CACHED DATA", { exact: true }),
     ).toBeVisible();
+    await expect(reopened.getByLabel("Filter by hero")).toHaveValue("1");
     await reopened
       .getByRole("button", { name: "Settings", exact: true })
       .click();

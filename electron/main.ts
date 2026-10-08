@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, powerSaveBlocker } from "electron";
+import { app, BrowserWindow, ipcMain, powerSaveBlocker, shell } from "electron";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -145,7 +145,11 @@ else {
             backgroundThrottling: false,
           },
         });
-        window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+        window.webContents.setWindowOpenHandler(({ url }) => {
+          if (url === "https://api.deadlock-api.com/docs")
+            void shell.openExternal(url);
+          return { action: "deny" };
+        });
         window.webContents.on("will-navigate", (event, url) => {
           if (url !== productionUrl && (app.isPackaged || url !== devUrl + "/"))
             event.preventDefault();

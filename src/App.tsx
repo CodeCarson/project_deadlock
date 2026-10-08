@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import {
   Activity,
   ArrowRight,
@@ -44,15 +44,19 @@ import {
 import { formatClock, parseClock } from "./core/timer";
 import { notify, playSound, unlockAudio } from "./core/audio";
 import { RuleEditor } from "./components/RuleEditor";
-import { PlayerDashboard } from "./components/PlayerDashboard";
+const PlayerDashboard = lazy(() =>
+  import("./components/PlayerDashboard").then((module) => ({
+    default: module.PlayerDashboard,
+  })),
+);
 import { restoreTimerDefaults } from "./core/settings";
 
 type Page =
   "Dashboard" | "Match History" | "Heroes" | "Live Match" | "Settings";
 const navigation: { name: Page; icon: LucideIcon; later?: boolean }[] = [
   { name: "Dashboard", icon: LayoutDashboard },
-  { name: "Match History", icon: History, later: true },
-  { name: "Heroes", icon: Swords, later: true },
+  { name: "Match History", icon: History },
+  { name: "Heroes", icon: Swords },
   { name: "Live Match", icon: Crosshair },
   { name: "Settings", icon: Settings2 },
 ];
@@ -411,7 +415,7 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="phase-card">
-            <span className="phase-chip">PHASE 02</span>
+            <span className="phase-chip">PHASE 03</span>
             <h3>Built for your next match.</h3>
             <p>
               Your stats. Your reminders.
@@ -427,7 +431,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.2.0 · Independent community tool</span>
+          <span className="version">v0.3.0 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -958,43 +962,32 @@ export default function App() {
                   </div>
                 </>
               )}
-              {page === "Dashboard" && (
-                <PlayerDashboard
-                  accountId={settings.accountId}
-                  onAccountChange={(accountId) =>
-                    save({ ...settings, accountId })
+              {(page === "Dashboard" ||
+                page === "Heroes" ||
+                page === "Match History") && (
+                <Suspense
+                  fallback={
+                    <section className="panel player-empty" role="status">
+                      Loading player tools…
+                    </section>
                   }
-                />
-              )}
-              {(page === "Heroes" || page === "Match History") && (
-                <section className="panel future-panel">
-                  <span className="future-icon">
-                    {page === "Heroes" ? (
-                      <Swords size={36} />
-                    ) : (
-                      <History size={36} />
-                    )}
-                  </span>
-                  <span className="phase-chip">PLANNED FOR A LATER PHASE</span>
-                  <h2>
-                    {page === "Heroes"
-                      ? "Know your heroes. Master your matches."
-                      : "Your story, one match at a time."}
-                  </h2>
-                  <p>
-                    {page === "Heroes"
-                      ? "Detailed hero analytics are planned for Phase 3. Your dashboard already includes hero win rates."
-                      : "A full match-history explorer is planned for Phase 3. Recent results and basic details are available on your dashboard."}{" "}
-                    This version includes public player statistics and the
-                    live-match assistant.
-                  </p>
-                  <button
-                    className="button primary"
-                    onClick={() => setPage("Live Match")}
-                  >
-                    Back to live match <ArrowRight size={16} />
-                  </button>
-                </section>
+                >
+                  <PlayerDashboard
+                    view={page}
+                    savedFilters={settings.playerFilters}
+                    onFiltersChange={(playerFilters) =>
+                      change({ playerFilters })
+                    }
+                    accountId={settings.accountId}
+                    onAccountChange={(accountId) =>
+                      save({
+                        ...settings,
+                        accountId,
+                        playerFilters: defaultSettings.playerFilters,
+                      })
+                    }
+                  />
+                </Suspense>
               )}
             </>
           )}

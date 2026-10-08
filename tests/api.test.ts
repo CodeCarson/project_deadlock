@@ -125,6 +125,40 @@ describe("public player identity and statistics", () => {
   });
 });
 describe("API transport and offline cache", () => {
+  it("keeps provider provenance and rebuild cooldown in the disk cache across restarts", async () => {
+    const { client, fetcher, cache, advance } = setup();
+    fetcher.mockResolvedValueOnce(
+      Response.json([fixture()], { headers: { "Called-Steam": "false" } }),
+    );
+    expect(
+      await client.request({ ...request, refresh: true, forceRefetch: true }),
+    ).toMatchObject({ historySource: "stored" });
+    advance(30001);
+    const reopened = new ApiClient(cache, fetcher, () => 1030001);
+    expect((await reopened.request(request)).historySource).toBe("stored");
+    expect(
+      (await reopened.request({ ...request, forceRefetch: true })).warning,
+    ).toContain("once per hour");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][1]?.cache).toBe("no-store");
+  });
+  it("accepts the provider's validated stored history on a normal-refresh rate limit", async () => {
+    const { client, fetcher } = setup();
+    fetcher.mockResolvedValueOnce(
+      Response.json([fixture()], {
+        status: 429,
+        headers: { "Called-Steam": "false" },
+      }),
+    );
+    expect(await client.request(request)).toMatchObject({
+      cached: false,
+      stale: true,
+      historySource: "stored",
+      data: [fixture()],
+    });
+    expect((await client.request(request)).historySource).toBe("stored");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("deduplicates concurrent fetches, uses the cache, and expires player data after five minutes", async () => {
     const { client, fetcher, advance } = setup();
     const results = await Promise.all([
@@ -141,7 +175,7 @@ describe("API transport and offline cache", () => {
       "https://api.deadlock-api.com/v1/players/1234/match-history",
     );
   });
-  it("limits rapid force-refresh calls and requests Steam refresh after the cooldown", async () => {
+  it("uses ordinary Refresh separately from an hourly full-history rebuild", async () => {
     const { client, fetcher, advance } = setup();
     await client.request(request);
     expect(
@@ -149,7 +183,14 @@ describe("API transport and offline cache", () => {
     ).toContain("30 seconds");
     advance(30001);
     await client.request({ ...request, refresh: true });
-    expect(String(fetcher.mock.calls[1][0])).toContain("force_refetch=true");
+    expect(String(fetcher.mock.calls[1][0])).not.toContain("force_refetch");
+    await client.request({ ...request, refresh: true, forceRefetch: true });
+    expect(String(fetcher.mock.calls[2][0])).toContain("force_refetch=true");
+    expect(
+      (await client.request({ ...request, refresh: true, forceRefetch: true }))
+        .warning,
+    ).toContain("once per hour");
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
   it("retains verified cached results with a visible warning on rate limits and malformed responses", async () => {
     const { client, fetcher, advance } = setup();

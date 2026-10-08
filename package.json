@@ -1,6 +1,6 @@
 {
   "name": "deadlock-companion",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "A Windows Deadlock companion with public player statistics and configurable match reminders",
   "author": "Deadlock Companion contributors",
@@ -49,6 +49,7 @@
     "lucide-react": "^1.53.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "recharts": "^3.10.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

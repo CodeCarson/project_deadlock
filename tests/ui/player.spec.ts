@@ -58,7 +58,13 @@ async function mockApi(page: Page) {
                 { id: 2, name: "Bebop" },
               ]
             : [{ tier: 7, name: "Archon" }];
-    await route.fulfill({ json: data });
+    await route.fulfill({
+      json: data,
+      headers: {
+        "Called-Steam": "false",
+        "Access-Control-Expose-Headers": "Called-Steam",
+      },
+    });
   });
 }
 async function lookup(page: Page) {
@@ -76,7 +82,9 @@ test("player lookup shows exact profile, real outcome summaries, filters and mat
   await mockApi(page);
   await lookup(page);
   await expect(page.getByText("Wrong player", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("Archon 2", { exact: false })).toBeVisible();
+  await expect(
+    page.locator(".player-identity").getByText("Archon 2", { exact: false }),
+  ).toBeVisible();
   await expect(
     page.getByText("1 wins · 1 losses · 1 unscored", { exact: true }),
   ).toBeVisible();
@@ -166,4 +174,91 @@ test("invalid identifiers are explained and a failed new account never displays 
     page.getByRole("heading", { name: "Test player", exact: true }),
   ).toHaveCount(0);
   await expect(page.locator(".stats-grid")).toHaveCount(0);
+});
+
+test("Phase 3 views use available history, preserve filters and distinguish rebuilds", async ({
+  page,
+}) => {
+  const historyUrls: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("match-history"))
+      historyUrls.push(request.url());
+  });
+  await mockApi(page);
+  await lookup(page);
+  await expect(
+    page.getByText(/3 available matches · newest match/),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/indexed history without calling Steam/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "Daily win rate and KDA chart" }),
+  ).toBeVisible();
+  await page.getByText("View daily values", { exact: true }).click();
+  await expect(page.locator(".chart-data table").first()).toBeVisible();
+  await page
+    .getByRole("button", { name: "Rebuild full history", exact: true })
+    .click();
+  await expect.poll(() => historyUrls.length).toBe(2);
+  expect(historyUrls[0]).not.toContain("force_refetch");
+  expect(historyUrls[1]).toContain("force_refetch=true");
+  await page.getByRole("button", { name: "Heroes", exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: "Matches played by hero" }),
+  ).toBeVisible();
+  await page.getByLabel("Filter by hero").selectOption("1");
+  await expect(
+    page.getByText("2 of 3 available", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Match History", exact: true })
+    .click();
+  await expect(page.getByLabel("Filter by hero")).toHaveValue("1");
+  await expect(page.locator(".history-match")).toHaveCount(2);
+  await page.getByLabel("Search match ID").fill("101");
+  await expect(page.locator(".history-match")).toHaveCount(1);
+  await page.locator(".history-match summary").click();
+  await expect(page.getByText("12,000", { exact: true })).toBeVisible();
+  await page.getByLabel("Filter by result").selectOption("loss");
+  await expect(page.locator(".history-match")).toHaveCount(0);
+});
+
+test("history pagination and sorting include matches beyond the first page", async ({
+  page,
+}) => {
+  await mockApi(page);
+  const history = Array.from({ length: 31 }, (_, i) => ({
+    ...matches[0],
+    match_id: 1000 + i,
+    start_time: now - i * 3600,
+  }));
+  await page.route("**/v1/players/1234/match-history", (route) =>
+    route.fulfill({ json: history }),
+  );
+  await lookup(page);
+  await page
+    .getByRole("button", { name: "Match History", exact: true })
+    .click();
+  await expect(page.locator(".history-match")).toHaveCount(25);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Page 2 of 2", { exact: true })).toBeVisible();
+  await expect(page.locator(".history-match")).toHaveCount(6);
+  await page.getByLabel("Sort match history").selectOption("oldest");
+  await expect(page.getByText("Page 1 of 2", { exact: true })).toBeVisible();
+  await page.locator(".history-match summary").first().click();
+  await expect(
+    page.locator(".history-match").first().getByText("1030", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/phase3-history.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 650, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });
