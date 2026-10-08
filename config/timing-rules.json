@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "note": "No current timing source could be reached during development. These categories are intentionally disabled with no guessed timing values. Set timings and confirm the current patch in Settings. Each conditional rule tracks ONE camp/location; create separate rules for other locations.",
+  "rules": [
+    {
+      "id": "small-camp",
+      "name": "Small jungle camp",
+      "category": "camp",
+      "mode": "conditional",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": "Choose a camp location"
+    },
+    {
+      "id": "medium-camp",
+      "name": "Medium jungle camp",
+      "category": "camp",
+      "mode": "conditional",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": "Choose a camp location"
+    },
+    {
+      "id": "large-camp",
+      "name": "Large jungle camp",
+      "category": "camp",
+      "mode": "conditional",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": "Choose a camp location"
+    },
+    {
+      "id": "boxes",
+      "name": "Boxes",
+      "category": "breakable",
+      "mode": "conditional",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": "Choose a location"
+    },
+    {
+      "id": "statues",
+      "name": "Golden statues",
+      "category": "breakable",
+      "mode": "conditional",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": "Choose a location"
+    },
+    {
+      "id": "bridge",
+      "name": "Bridge buffs",
+      "category": "objective",
+      "mode": "once",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": ""
+    },
+    {
+      "id": "urn",
+      "name": "Soul Urn",
+      "category": "objective",
+      "mode": "once",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": ""
+    },
+    {
+      "id": "rift",
+      "name": "Unstable Rift / other objective",
+      "category": "objective",
+      "mode": "once",
+      "firstSpawn": null,
+      "repeatSeconds": null,
+      "respawnSeconds": null,
+      "enabled": false,
+      "confirmed": false,
+      "source": "",
+      "location": ""
+    }
+  ]
+}
