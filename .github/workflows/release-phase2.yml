@@ -1,0 +1,86 @@
+name: Publish Phase 2 Windows prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Phase 2 source tag
+        required: true
+        default: v0.2.0-phase2
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase2-prerelease
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ inputs.tag || 'v0.2.0-phase2' }}
+    steps:
+      - name: Check out the tagged application source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag || 'v0.2.0-phase2' }}
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test API handling, timing and configuration
+        run: npm test
+      - name: Require verified enabled timer presets
+        shell: pwsh
+        run: |
+          $config = Get-Content config/timing-rules.json -Raw | ConvertFrom-Json
+          if ($config.revision -lt 1) { throw 'Timing preset verification is unfinished.' }
+          foreach ($rule in $config.rules) {
+            if (!$rule.enabled -or !$rule.confirmed -or !$rule.source) {
+              throw "The built-in rule $($rule.id) is not verified and enabled."
+            }
+          }
+      - name: Build the portable Windows application
+        run: npm run dist:win:zip
+      - name: Publish the prerelease with the ZIP and checksum
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase2$') {
+            throw 'Expected a Phase 2 version tag such as v0.2.0-phase2.'
+          }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $originalZip = "Deadlock Companion-$version-win.zip"
+          $zipName = "Deadlock.Companion-$version-win.zip"
+          Rename-Item (Join-Path release $originalZip) $zipName
+          $zipPath = Join-Path release $zipName
+          if (!(Test-Path $zipPath)) { throw 'The Windows ZIP was not built.' }
+          $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
+          "$hash  $zipName" | Set-Content -Encoding utf8NoBOM release/SHA256SUMS.txt
+          @'
+          Phase 2 Windows x64 prerelease. Extract the entire ZIP and launch Deadlock Companion.exe. Keep the extracted files together. Existing Phase 1 settings and personal reminders use the same profile directory.
+
+          Adds public Steam-account lookup, player profile and available rank, available-match statistics, win rate, KDA, hero win rates, recent expandable results, hero/mode/time filters, refresh and persistent offline caching. Missing API fields remain unavailable. Net worth per minute is labelled separately from total earned souls.
+
+          Includes editable enabled timing presets checked against the latest released patch listed by the wiki (October 6, 2026), with source references in config/timing-rules.json. Camp/breakable delays begin when you mark a location cleared. Rift alerts describe random spawn windows; mark its visual effect appeared to anchor the next window. The Urn preset alerts its first descent only, because carrying can delay later spawns. Location exceptions are noted for tunnel and above-Midboss breakables. Customised rules are preserved during upgrades; Restore defaults resets built-ins while keeping personal reminders and audio preferences.
+
+          Unit, browser and native Electron checks cover API fixture handling, offline fallback, settings upgrades and minimised reminder audio. Timing sources are recorded with the presets. This Windows runner additionally runs the unit tests and builds the ZIP. Use Test sound on your PC to check your audio output.
+
+          Full hero analytics, the dedicated match-history explorer and charts remain Phase 3. Independent community project; not affiliated with Valve.
+          '@ | Set-Content -Encoding utf8NoBOM release/notes.md
+          $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if (!(($existing | ConvertFrom-Json).isPrerelease)) { throw 'The existing release is not a prerelease.' }
+            gh release upload $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Phase 2' --notes-file release/notes.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed.' }

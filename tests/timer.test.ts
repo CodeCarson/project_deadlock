@@ -219,16 +219,25 @@ describe("imported rule identity", () => {
 });
 
 describe("configuration and clock input", () => {
-  it("has no invented enabled default game timings", () => {
+  it("ships enabled sourced current-patch presets with conditional camp timers", () => {
+    expect(defaultSettings.presetRevision).toBe(1);
     expect(
       defaultSettings.rules.every(
         (r) =>
-          !r.enabled &&
-          !r.confirmed &&
-          r.firstSpawn === null &&
-          r.respawnSeconds === null,
+          r.enabled &&
+          r.confirmed &&
+          r.source.startsWith("https://deadlock.wiki/"),
       ),
     ).toBe(true);
+    expect(
+      defaultSettings.rules
+        .filter((r) => r.category === "camp")
+        .map((r) => [r.firstSpawn, r.respawnSeconds, r.mode]),
+    ).toEqual([
+      [120, 85, "conditional"],
+      [300, 290, "conditional"],
+      [480, 335, "conditional"],
+    ]);
   });
   it("requires timing confirmation and a source for enabled game rules", () => {
     expect(ruleSchema.safeParse({ ...rule, confirmed: false }).success).toBe(
@@ -267,5 +276,57 @@ describe("configuration and clock input", () => {
     expect(formatClock(105.9)).toBe("01:45");
     for (const value of ["1:99", "abc", "-1:00", "1:2", "1441:00"])
       expect(() => parseClock(value)).toThrow();
+  });
+});
+
+describe("variable Rift windows", () => {
+  const rift: Rule = {
+    id: "rift",
+    name: "Unstable Rift",
+    category: "objective",
+    mode: "conditional",
+    firstSpawn: 600,
+    repeatSeconds: null,
+    respawnSeconds: 360,
+    windowSeconds: 120,
+    enabled: true,
+    confirmed: true,
+    source: "Window test fixture",
+    location: "",
+  };
+  it("announces a window rather than an exact spawn and keeps it visible while open", () => {
+    const { engine, advance } = setup([rift]);
+    engine.command({ type: "start" });
+    advance(585);
+    expect(engine.snapshot().log[0].message).toBe(
+      "Unstable Rift window begins in 15 seconds",
+    );
+    const alerts = advance(15);
+    expect(alerts[0].message).toBe("Unstable Rift window begins now");
+    advance(30);
+    expect(engine.snapshot().upcoming[0]).toMatchObject({
+      at: 600,
+      windowEnd: 720,
+    });
+    expect(advance(0)).toEqual([]);
+    advance(91);
+    expect(engine.snapshot().upcoming).toEqual([]);
+  });
+  it("anchors the next 6–8 minute window to the manually observed visual effect", () => {
+    const { engine, advance } = setup([rift]);
+    engine.command({ type: "start" });
+    advance(660);
+    engine.command({ type: "clear", ruleId: "rift" });
+    expect(engine.snapshot().upcoming[0]).toMatchObject({
+      at: 1020,
+      windowEnd: 1140,
+    });
+    engine.command({ type: "sync", seconds: 1010 });
+    expect(advance(0)).toEqual([]);
+    expect(advance(10)[0].message).toBe("Unstable Rift window begins now");
+    advance(130);
+    expect(engine.snapshot().upcoming).toEqual([]);
+    engine.command({ type: "undo-clear", ruleId: "rift" });
+    expect(engine.snapshot().upcoming).toEqual([]);
   });
 });

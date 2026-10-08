@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ApiRequest, ApiResult } from "./api.js";
 import defaults from "../../config/timing-rules.json" with { type: "json" };
 const seconds = z.number().int().min(0).max(86400);
 export const ruleSchema = z
@@ -14,11 +15,17 @@ export const ruleSchema = z
     confirmed: z.boolean(),
     source: z.string().max(500),
     location: z.string().max(100),
+    windowSeconds: seconds.min(1).nullable().optional(),
+    note: z.string().max(600).optional(),
   })
   .superRefine((r, ctx) => {
     const fail = (message: string) => ctx.addIssue({ code: "custom", message });
     if (r.category === "camp" && r.mode !== "conditional")
       fail("Camps must use conditional respawns.");
+    if (r.windowSeconds && r.mode !== "conditional")
+      fail(
+        "Variable spawn windows must be tracked from a manually observed event.",
+      );
     if (r.confirmed && r.category !== "custom" && !r.source.trim())
       fail("Add a timing source or patch note for game events.");
     if (r.enabled && !r.confirmed)
@@ -39,6 +46,15 @@ export type Rule = z.infer<typeof ruleSchema>;
 export const settingsSchema = z
   .object({
     version: z.literal(1),
+    presetRevision: z.number().int().nonnegative().default(0),
+    accountId: z
+      .string()
+      .regex(/^$|^[1-9][0-9]{0,9}$/)
+      .refine(
+        (value) => !value || Number(value) <= 4294967295,
+        "Invalid Steam account ID.",
+      )
+      .default(""),
     volume: z.number().min(0).max(1),
     sound: z.enum(["chime", "pulse", "bell"]),
     speech: z.boolean(),
@@ -53,6 +69,7 @@ export const settingsSchema = z
 export type Settings = z.infer<typeof settingsSchema>;
 export const defaultSettings: Settings = settingsSchema.parse({
   version: 1,
+  presetRevision: (defaults as { revision?: number }).revision ?? 0,
   volume: 0.65,
   sound: "chime",
   speech: false,
@@ -68,6 +85,7 @@ export interface Occurrence {
   location: string;
   at: number;
   kind: "spawn" | "respawn";
+  windowEnd?: number;
 }
 export interface Alert {
   id: string;
@@ -97,6 +115,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
 ]);
 export interface Bridge {
+  request(request: ApiRequest): Promise<ApiResult>;
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
   getTimer(): Promise<TimerSnapshot>;
@@ -112,3 +131,5 @@ export function errorMessage(error: unknown) {
     ? error.message
     : "Something went wrong. Please try again.";
 }
+
+export const timingNote: string = defaults.note;

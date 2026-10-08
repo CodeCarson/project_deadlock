@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, powerSaveBlocker } from "electron";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { ApiClient } from "../src/core/api.js";
+import { migrateSettings } from "../src/core/settings.js";
 import { TimerEngine } from "../src/core/timer.js";
 import {
   defaultSettings,
@@ -56,7 +58,7 @@ else {
       const dataRoot = app.getPath("userData");
       const settingsFile = join(dataRoot, "settings.json");
       try {
-        settings = settingsSchema.parse(
+        settings = migrateSettings(
           JSON.parse(await readFile(settingsFile, "utf8")),
         );
       } catch (error) {
@@ -69,6 +71,35 @@ else {
           console.warn("Invalid settings were preserved; defaults loaded.");
         }
       }
+      await atomicWrite(settingsFile, JSON.stringify(settings, null, 2)).catch(
+        () => {
+          console.warn(
+            "Could not persist settings migration; existing settings were kept.",
+          );
+        },
+      );
+      const cacheRoot = join(dataRoot, "api-cache");
+      const api = new ApiClient({
+        async get(key) {
+          try {
+            return JSON.parse(
+              await readFile(join(cacheRoot, `${key}.json`), "utf8"),
+            );
+          } catch {
+            return undefined;
+          }
+        },
+        async set(key, entry) {
+          await atomicWrite(
+            join(cacheRoot, `${key}.json`),
+            JSON.stringify(entry),
+          );
+        },
+      });
+      ipcMain.handle("api:request", (event, raw) => {
+        trusted(event);
+        return api.request(raw);
+      });
       engine = new TimerEngine(settings);
       ipcMain.handle("settings:load", (event) => {
         trusted(event);

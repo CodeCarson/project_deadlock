@@ -6,6 +6,8 @@ import {
   type TimerSnapshot,
   type Alert,
 } from "./schema.js";
+import { ApiClient } from "./api.js";
+import { migrateSettings } from "./settings.js";
 import { TimerEngine } from "./timer.js";
 declare global {
   interface Window {
@@ -18,10 +20,22 @@ function browserBridge(): Bridge {
   let settings: Settings = structuredClone(defaultSettings);
   try {
     const saved = localStorage.getItem(settingsKey);
-    if (saved) settings = settingsSchema.parse(JSON.parse(saved));
+    if (saved) {
+      settings = migrateSettings(JSON.parse(saved));
+      localStorage.setItem(settingsKey, JSON.stringify(settings));
+    }
   } catch {
     /* Keep invalid storage intact until a deliberate save. */
   }
+  const api = new ApiClient({
+    async get(key) {
+      const value = localStorage.getItem(`deadlock-api.v1.${key}`);
+      return value ? JSON.parse(value) : undefined;
+    },
+    async set(key, entry) {
+      localStorage.setItem(`deadlock-api.v1.${key}`, JSON.stringify(entry));
+    },
+  });
   const engine = new TimerEngine(settings);
   const listeners = new Set<(state: TimerSnapshot) => void>();
   const alertListeners = new Set<(alert: Alert) => void>();
@@ -31,6 +45,7 @@ function browserBridge(): Bridge {
   };
   setInterval(tick, 200);
   return {
+    request: (request) => api.request(request),
     async loadSettings() {
       return settings;
     },

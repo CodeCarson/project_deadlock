@@ -33,6 +33,7 @@ import type { LucideIcon } from "lucide-react";
 import { bridge, isDesktop } from "./core/bridge";
 import {
   defaultSettings,
+  timingNote,
   settingsSchema,
   errorMessage,
   type Rule,
@@ -43,6 +44,8 @@ import {
 import { formatClock, parseClock } from "./core/timer";
 import { notify, playSound, unlockAudio } from "./core/audio";
 import { RuleEditor } from "./components/RuleEditor";
+import { PlayerDashboard } from "./components/PlayerDashboard";
+import { restoreTimerDefaults } from "./core/settings";
 
 type Page =
   "Dashboard" | "Match History" | "Heroes" | "Live Match" | "Settings";
@@ -81,6 +84,7 @@ export default function App() {
   const [editor, setEditor] = useState<Rule>();
   const [sync, setSync] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDefaults, setConfirmDefaults] = useState(false);
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -311,17 +315,25 @@ export default function App() {
             </div>
             <h3>{rule.name}</h3>
             <p className="rule-location">{rule.location || "Match reminder"}</p>
+            {rule.note && <small className="rule-note">{rule.note}</small>}
             <div className="rule-timing">
               <span>
                 {rule.enabled && occurrence
-                  ? formatClock(Math.max(0, occurrence.at - timer.seconds))
+                  ? occurrence.windowEnd && occurrence.at <= timer.seconds
+                    ? "Open"
+                    : formatClock(Math.max(0, occurrence.at - timer.seconds))
                   : rule.confirmed
                     ? "Configured"
                     : "Set timing"}
               </span>
               <span className="muted">
                 {rule.enabled && occurrence
-                  ? "until event"
+                  ? occurrence.windowEnd
+                    ? `${formatClock(occurrence.at)}–${formatClock(occurrence.windowEnd)}`
+                    : occurrence.kind === "respawn" &&
+                        rule.category === "breakable"
+                      ? "earliest respawn"
+                      : "until event"
                   : rule.mode === "conditional"
                     ? "conditional respawn"
                     : rule.mode === "interval"
@@ -344,13 +356,14 @@ export default function App() {
                       void command({ type: "clear", ruleId: rule.id })
                     }
                   >
-                    Mark cleared
+                    {rule.windowSeconds ? "Mark appeared" : "Mark cleared"}
                   </button>
                 )}
             </div>
             {timer.cleared[rule.id] !== undefined && (
               <div className="clear-note">
-                Cleared at {formatClock(timer.cleared[rule.id])}
+                {rule.windowSeconds ? "Appeared" : "Cleared"} at{" "}
+                {formatClock(timer.cleared[rule.id])}
                 <button
                   className="text-button"
                   onClick={() =>
@@ -398,10 +411,10 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="phase-card">
-            <span className="phase-chip">PHASE 01</span>
+            <span className="phase-chip">PHASE 02</span>
             <h3>Built for your next match.</h3>
             <p>
-              Your clock. Your reminders.
+              Your stats. Your reminders.
               <br />
               Stay one step ahead.
             </p>
@@ -414,7 +427,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.1.0 · Independent community tool</span>
+          <span className="version">v0.2.0 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -637,18 +650,24 @@ export default function App() {
                               </span>
                               <div>
                                 <span className="eyebrow">
-                                  {next.kind === "respawn"
-                                    ? "CONDITIONAL RESPAWN"
-                                    : "SCHEDULED EVENT"}
+                                  {next.windowEnd
+                                    ? "VARIABLE SPAWN WINDOW"
+                                    : next.kind === "respawn"
+                                      ? "CONDITIONAL RESPAWN"
+                                      : "SCHEDULED EVENT"}
                                 </span>
                                 <h2>{next.name}</h2>
                                 <p>
-                                  {next.location ||
-                                    `At ${formatClock(next.at)} match time`}
+                                  {next.windowEnd
+                                    ? `${formatClock(next.at)}–${formatClock(next.windowEnd)} · visual effect`
+                                    : next.location ||
+                                      `At ${formatClock(next.at)} match time`}
                                 </p>
                               </div>
                               <span className="next-countdown">
-                                {formatClock(next.at - timer.seconds)}
+                                {next.windowEnd && next.at <= timer.seconds
+                                  ? "Open"
+                                  : formatClock(next.at - timer.seconds)}
                               </span>
                             </div>
                             <div className="timeline-list">
@@ -656,7 +675,12 @@ export default function App() {
                                 <div key={o.key}>
                                   <i />
                                   <span>{o.name}</span>
-                                  <time>{formatClock(o.at)}</time>
+                                  <time>
+                                    {formatClock(o.at)}
+                                    {o.windowEnd
+                                      ? `–${formatClock(o.windowEnd)}`
+                                      : ""}
+                                  </time>
                                 </div>
                               ))}
                             </div>
@@ -718,10 +742,7 @@ export default function App() {
                     </div>
                     <div className="timing-notice">
                       <Shield size={15} />
-                      <span>
-                        Game timings need confirmation. Default categories are
-                        disabled until you set timings for your current patch.
-                      </span>
+                      <span>{timingNote}</span>
                     </div>
                     {ruleCards}
                   </section>
@@ -830,6 +851,14 @@ export default function App() {
                       <div className="button-group">
                         <button
                           className="button secondary small"
+                          disabled={busy}
+                          onClick={() => setConfirmDefaults(true)}
+                        >
+                          <RotateCcw size={14} />
+                          Restore defaults
+                        </button>
+                        <button
+                          className="button secondary small"
                           onClick={() => fileInput.current?.click()}
                         >
                           <Upload size={14} />
@@ -862,6 +891,31 @@ export default function App() {
                       </span>
                     </div>
                     {ruleCards}
+                    {confirmDefaults && (
+                      <div className="banner info-banner">
+                        <span>
+                          Restore built-in timer rules? Your personal reminders
+                          and audio settings will be kept.
+                        </span>
+                        <button
+                          className="text-button purple-text"
+                          disabled={busy}
+                          onClick={() =>
+                            void save(restoreTimerDefaults(settings))
+                              .then(() => setConfirmDefaults(false))
+                              .catch((e) => setError(e.message))
+                          }
+                        >
+                          Restore
+                        </button>
+                        <button
+                          className="text-button"
+                          onClick={() => setConfirmDefaults(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                     <div className="custom-rule-list">
                       {settings.rules
                         .filter(
@@ -905,110 +959,12 @@ export default function App() {
                 </>
               )}
               {page === "Dashboard" && (
-                <>
-                  <section className="panel welcome-panel">
-                    <div>
-                      <span className="phase-chip">
-                        PHASE 01 · TIMER ASSISTANT
-                      </span>
-                      <h2>
-                        A clearer head.
-                        <br />
-                        <span>A better-timed match.</span>
-                      </h2>
-                      <p>
-                        Set up reminders, start your clock, and keep this
-                        companion on your second monitor. Your next objective is
-                        one glance away.
-                      </p>
-                      <button
-                        className="button primary"
-                        onClick={() => setPage("Live Match")}
-                      >
-                        <Crosshair size={17} />
-                        Open live match <ArrowRight size={16} />
-                      </button>
-                    </div>
-                    <div className="welcome-visual" aria-hidden="true">
-                      <Crosshair size={145} strokeWidth={0.65} />
-                      <span>{formatClock(timer.seconds)}</span>
-                    </div>
-                  </section>
-                  <div className="overview-grid">
-                    <article className="panel overview-card">
-                      <Clock3 />
-                      <strong>
-                        {timer.status === "running"
-                          ? "Running"
-                          : timer.status === "paused"
-                            ? "Paused"
-                            : "Standby"}
-                      </strong>
-                      <span>Match clock</span>
-                    </article>
-                    <article className="panel overview-card">
-                      <Bell />
-                      <strong>{enabled.length}</strong>
-                      <span>Active event rules</span>
-                    </article>
-                    <article className="panel overview-card">
-                      <Volume2 />
-                      <strong>{Math.round(settings.volume * 100)}%</strong>
-                      <span>Notification volume</span>
-                    </article>
-                  </div>
-                  <section className="panel getting-started">
-                    <h2>Your pre-match checklist</h2>
-                    <div>
-                      <span>01</span>
-                      <p>
-                        <strong>Configure your rules</strong>Set the timings for
-                        your current patch. Conditional rules track one location
-                        at a time.
-                      </p>
-                      <button
-                        className="text-button"
-                        onClick={() => setPage("Settings")}
-                      >
-                        Settings <ArrowRight size={14} />
-                      </button>
-                    </div>
-                    <div>
-                      <span>02</span>
-                      <p>
-                        <strong>Test your audio</strong>Choose a sound you can
-                        hear over the game and check your volume.
-                      </p>
-                      <button
-                        className="text-button"
-                        onClick={() => void testAudio()}
-                      >
-                        Test sound <Volume2 size={14} />
-                      </button>
-                    </div>
-                    <div>
-                      <span>03</span>
-                      <p>
-                        <strong>Start and synchronise</strong>Start at match
-                        time zero or enter the actual game clock. Mark camps
-                        cleared to track respawns.
-                      </p>
-                      <button
-                        className="text-button"
-                        onClick={() => setPage("Live Match")}
-                      >
-                        Live match <ArrowRight size={14} />
-                      </button>
-                    </div>
-                  </section>
-                  <div className="planned-note">
-                    <LayoutDashboard size={18} />
-                    <span>
-                      Player statistics and performance charts are planned for
-                      Phase 2.
-                    </span>
-                  </div>
-                </>
+                <PlayerDashboard
+                  accountId={settings.accountId}
+                  onAccountChange={(accountId) =>
+                    save({ ...settings, accountId })
+                  }
+                />
               )}
               {(page === "Heroes" || page === "Match History") && (
                 <section className="panel future-panel">
@@ -1027,9 +983,10 @@ export default function App() {
                   </h2>
                   <p>
                     {page === "Heroes"
-                      ? "Hero performance and analytics will come after the timer assistant."
-                      : "Public match history and expandable statistics will come after the timer assistant."}{" "}
-                    This version focuses on a usable live-match timer.
+                      ? "Detailed hero analytics are planned for Phase 3. Your dashboard already includes hero win rates."
+                      : "A full match-history explorer is planned for Phase 3. Recent results and basic details are available on your dashboard."}{" "}
+                    This version includes public player statistics and the
+                    live-match assistant.
                   </p>
                   <button
                     className="button primary"

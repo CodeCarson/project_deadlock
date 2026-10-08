@@ -1,8 +1,8 @@
 {
   "name": "deadlock-companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "A second-monitor Deadlock companion with manual match timers and configurable audio reminders",
+  "description": "A Windows Deadlock companion with public player statistics and configurable match reminders",
   "author": "Deadlock Companion contributors",
   "license": "MIT",
   "type": "module",

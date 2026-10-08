@@ -49,6 +49,9 @@ export function RuleEditor({
   const [respawn, setRespawn] = useState(
     rule.respawnSeconds === null ? "" : formatClock(rule.respawnSeconds),
   );
+  const [windowSize, setWindowSize] = useState(
+    rule.windowSeconds ? formatClock(rule.windowSeconds) : "",
+  );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const patch = (change: Partial<Rule>) => setDraft({ ...draft, ...change });
@@ -62,6 +65,10 @@ export function RuleEditor({
         firstSpawn: first.trim() ? parseClock(first) : null,
         repeatSeconds: repeat.trim() ? parseClock(repeat) : null,
         respawnSeconds: respawn.trim() ? parseClock(respawn) : null,
+        windowSeconds:
+          draft.mode === "conditional" && windowSize.trim()
+            ? parseClock(windowSize)
+            : null,
       });
       await onSave(parsed);
       onClose();
@@ -166,15 +173,41 @@ export function RuleEditor({
             )}
             {draft.mode === "conditional" && (
               <label>
+                Spawn window length (MM:SS)
+                <input
+                  value={windowSize}
+                  placeholder="Leave blank for an exact timer"
+                  onChange={(e) => setWindowSize(e.target.value)}
+                />
+                <small>
+                  First event and delay are the earliest possible times. Mark
+                  the observed appearance to start the next window.
+                </small>
+              </label>
+            )}
+            {draft.mode === "conditional" && (
+              <label>
                 Respawn delay (MM:SS)
                 <input
                   placeholder="Verified delay, or leave blank"
                   value={respawn}
                   onChange={(e) => setRespawn(e.target.value)}
                 />
-                <small>Starts only when you mark this location cleared.</small>
+                <small>
+                  {windowSize
+                    ? "Starts when you mark the visual effect appeared."
+                    : "Starts only when you mark this location cleared."}
+                </small>
               </label>
             )}
+            <label className="span-2">
+              Timing note
+              <input
+                value={draft.note ?? ""}
+                onChange={(e) => patch({ note: e.target.value })}
+                maxLength={600}
+              />
+            </label>
             <label className="span-2">
               Specific location
               <input

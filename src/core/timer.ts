@@ -46,6 +46,7 @@ export class TimerEngine {
           location: rule.location,
           at,
           kind,
+          ...(rule.windowSeconds ? { windowEnd: at + rule.windowSeconds } : {}),
         });
     };
     if (rule.mode === "conditional" && this.cleared[rule.id] !== undefined) {
@@ -88,7 +89,13 @@ export class TimerEngine {
       cleared: { ...this.cleared },
       log: [...this.log],
       upcoming: this.settings.rules
-        .flatMap((r) => this.occurrences(r, seconds, seconds + 86400))
+        .flatMap((r) =>
+          this.occurrences(
+            r,
+            seconds - (r.windowSeconds ?? 0),
+            seconds + 86400,
+          ),
+        )
         .sort((a, b) => a.at - b.at)
         .slice(0, 24),
     };
@@ -122,15 +129,25 @@ export class TimerEngine {
           const name = event.location
             ? `${event.name} (${event.location})`
             : event.name;
+          const eventLabel =
+            event.kind === "respawn" && rule.category === "breakable"
+              ? "earliest respawn"
+              : event.kind === "respawn"
+                ? "respawn"
+                : "event";
           alerts.push({
             id: key,
             name,
             at,
             warning,
             late: seconds - at > 1,
-            message: warning
-              ? `${name} in ${warning} seconds`
-              : `${name} ${event.kind === "respawn" ? "respawn" : "event"} now`,
+            message: event.windowEnd
+              ? warning
+                ? `${name} window begins in ${warning} seconds`
+                : `${name} window begins now`
+              : warning
+                ? `${name}${eventLabel === "earliest respawn" ? " earliest respawn" : ""} in ${warning} seconds`
+                : `${name} ${eventLabel} now`,
           });
         }
       }

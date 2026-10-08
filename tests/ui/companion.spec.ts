@@ -61,7 +61,14 @@ test("invalid clock is explained and game timing categories open their editor", 
   await page.getByRole("button", { name: "Sync", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Use minutes:seconds");
   await page
-    .getByRole("switch", { name: "Enable Small jungle camp", exact: true })
+    .locator(".rule-card")
+    .filter({
+      has: page.getByRole("heading", {
+        name: "Small jungle camp",
+        exact: true,
+      }),
+    })
+    .getByRole("button", { name: "Edit rule", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByLabel("Timing type")).toBeDisabled();
@@ -84,4 +91,40 @@ test("responsive layouts fit the viewport and render all controls", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("current defaults are enabled and editable; Rift shows a window and a manual appearance action", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const switches = page.getByRole("switch", { name: /Enable / });
+  expect(await switches.count()).toBe(8);
+  for (const toggle of await switches.all())
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+  const small = page.locator(".rule-card").filter({
+    has: page.getByRole("heading", {
+      name: "Small jungle camp",
+      exact: true,
+    }),
+  });
+  await small.getByRole("button", { name: "Edit rule", exact: true }).click();
+  await expect(page.getByLabel("First event (MM:SS)")).toHaveValue("02:00");
+  await expect(page.getByLabel("Respawn delay (MM:SS)")).toHaveValue("01:25");
+  await page.getByLabel("Respawn delay (MM:SS)").fill("01:30");
+  await page.getByRole("button", { name: "Save rule", exact: true }).click();
+  await page.getByRole("button", { name: "Start match", exact: true }).click();
+  await page.getByLabel("Sync to game clock").fill("10:30");
+  await page.getByRole("button", { name: "Sync", exact: true }).click();
+  const rift = page.locator(".rule-card").filter({
+    has: page.getByRole("heading", { name: "Unstable Rift", exact: true }),
+  });
+  await expect(rift.getByText("Open", { exact: true })).toBeVisible();
+  await expect(rift.getByText("10:00–12:00", { exact: true })).toBeVisible();
+  await rift
+    .getByRole("button", { name: "Mark appeared", exact: true })
+    .click();
+  await expect(rift.getByText("16:30–18:30", { exact: true })).toBeVisible();
+  await page.reload();
+  await small.getByRole("button", { name: "Edit rule", exact: true }).click();
+  await expect(page.getByLabel("Respawn delay (MM:SS)")).toHaveValue("01:30");
 });
