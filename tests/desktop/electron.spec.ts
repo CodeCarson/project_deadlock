@@ -7,8 +7,6 @@ import {
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { WebSocket } from "ws";
-import { once } from "node:events";
 
 test("production app, native persistence, minimized scheduling and audio generation", async () => {
   const dir = await mkdtemp(join(tmpdir(), "companion-desktop-"));
@@ -214,10 +212,9 @@ test("production app, native persistence, minimized scheduling and audio generat
   }
 });
 
-test("paired helper export, automatic live-clock reminders and manual override", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "companion-overwolf-"));
+test("local OCR calibration and sampled-clock reminders while minimised", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "companion-capture-"));
   let app: ElectronApplication | undefined;
-  let socket: WebSocket | undefined;
   try {
     app = await electron.launch({
       args: [
@@ -233,85 +230,96 @@ test("paired helper export, automatic live-clock reminders and manual override",
       },
     });
     const page = await app.firstWindow();
+    const images = await page.evaluate(() => {
+      const image = (text: string) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 72;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = "black";
+        context.fillRect(0, 0, 200, 72);
+        context.fillStyle = "white";
+        context.font = "bold 48px monospace";
+        context.fillText(text, 16, 54);
+        return canvas.toDataURL("image/png").split(",")[1];
+      };
+      return [image("00:00"), image("00:03"), image("00:10")];
+    });
+    // Only the OS crop source is simulated. Real bundled OCR reads these pixels.
+    await app.evaluate(async ({ app }, image) => {
+      const loader = process
+        .getBuiltinModule("module")
+        .createRequire(app.getAppPath() + "/package.json");
+      const module = loader(
+        app.getAppPath() + "/dist-electron/electron/clock-capture.js",
+      );
+      module.ClockCapture.supported = () => true;
+      (globalThis as any).clockImage = image;
+      (globalThis as any).clockVisible = true;
+      module.ClockCapture.prototype.frame = async function (
+        _region: unknown,
+        preview: boolean,
+      ) {
+        return {
+          image:
+            preview || (globalThis as any).clockVisible
+              ? (globalThis as any).clockImage
+              : null,
+          observedAt: Date.now(),
+        };
+      };
+    }, images[0]);
     await page
       .getByRole("button", { name: "Add reminder", exact: true })
       .click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Event name").fill("Automatic test");
-    await dialog.getByLabel("First event (MM:SS)").fill("00:02");
+    await dialog.getByLabel("Event name").fill("Screen clock test");
+    await dialog.getByLabel("First event (MM:SS)").fill("00:03");
     await dialog.getByLabel("I have verified these timings").check();
     await dialog.getByLabel("Enable audio reminders").check();
     await dialog.getByRole("button", { name: "Save rule" }).click();
     await page.getByRole("button", { name: "Settings", exact: true }).click();
-    await app.evaluate(({ dialog }, dir) => {
-      dialog.showOpenDialog = async () => ({
-        canceled: false,
-        filePaths: [dir],
-      });
-    }, dir);
     await page
-      .getByRole("button", { name: "Export paired helper", exact: true })
+      .getByRole("button", { name: "Test clock crop", exact: true })
       .click();
-    await expect(page.getByText(/Helper folder:/)).toBeVisible();
-    const folder = await page.evaluate(
-      async () => await window.companion!.exportOverwolfHelper(),
-    );
-    expect(folder).toBeTruthy();
-    const config = await readFile(join(folder!, "config.js"), "utf8");
-    const userData = await app.evaluate(({ app }) => app.getPath("userData"));
-    const token = JSON.parse(
-      await readFile(join(userData, "overwolf-pairing.json"), "utf8"),
-    ).token;
-    expect(config.includes(token)).toBe(true);
-    const manifest = JSON.parse(
-      await readFile(join(folder!, "manifest.json"), "utf8"),
-    );
-    expect(Object.keys(manifest.data.windows)).toEqual(["background"]);
-    socket = new WebSocket("ws://127.0.0.1:32145/timer");
-    await once(socket, "open");
-    const paired = once(socket, "message");
-    socket.send(JSON.stringify({ kind: "pair", token }));
-    await paired;
-    let sequence = 0;
-    const clock = (seconds: number, paused = false) =>
-      socket!.send(
-        JSON.stringify({
-          kind: "clock",
-          matchId: "123",
-          seconds,
-          paused,
-          observedAt: Date.now(),
-          sequence: sequence++,
-        }),
-      );
-    clock(0);
+    await expect(page.getByText(/Read: 00:00/)).toBeVisible({ timeout: 20000 });
+    await page
+      .getByRole("button", { name: "Save clock area", exact: true })
+      .click();
+    await expect(page.getByRole("status")).toHaveText("Settings saved");
+    await page.getByLabel("Enable automatic match tracking").click();
     await expect(
-      page.getByText("Following Deadlock’s game clock", { exact: true }),
-    ).toBeVisible();
+      page.getByLabel("Enable automatic match tracking"),
+    ).toBeChecked();
+    await expect(
+      page.getByText("Following the visible game clock", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
     await page.getByRole("button", { name: "Live Match", exact: true }).click();
     await page.evaluate(() => {
-      (window as unknown as { tones: number }).tones = 0;
+      (window as any).tones = 0;
       const original = OscillatorNode.prototype.start;
       OscillatorNode.prototype.start = function (
         ...args: Parameters<OscillatorNode["start"]>
       ) {
-        (window as unknown as { tones: number }).tones++;
+        (window as any).tones++;
         return original.apply(this, args);
       };
     });
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0].minimize(),
     );
-    clock(2);
+    await app.evaluate((_electron, image) => {
+      (globalThis as any).clockImage = image;
+    }, images[1]);
     await expect(
-      page.getByText("Automatic test event now", { exact: true }),
-    ).toBeAttached();
+      page.getByText("Screen clock test event now", { exact: true }),
+    ).toBeAttached({ timeout: 10000 });
     await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { tones: number }).tones),
-      )
+      .poll(() => page.evaluate(() => (window as any).tones))
       .toBeGreaterThanOrEqual(3);
-    clock(2, true);
+    await app.evaluate(() => {
+      (globalThis as any).clockVisible = false;
+    });
     await expect
       .poll(
         async () =>
@@ -321,52 +329,46 @@ test("paired helper export, automatic live-clock reminders and manual override",
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0].restore(),
     );
-    clock(3);
-    await expect
-      .poll(
-        async () =>
-          (await page.evaluate(() => window.companion!.getTimer())).status,
-      )
-      .toBe("running");
-    await page.getByRole("button", { name: "Pause", exact: true }).click();
-    clock(10);
+    await page
+      .getByRole("button", { name: "Resume match", exact: true })
+      .click();
     await expect(
-      page.getByText("Manual control for this match", { exact: true }),
+      page.getByText("Manual control — resume automatic tracking when ready", {
+        exact: true,
+      }),
     ).toBeVisible();
-    expect(
-      (await page.evaluate(() => window.companion!.getTimer())).status,
-    ).toBe("paused");
+    await app.evaluate((_electron, image) => {
+      (globalThis as any).clockVisible = true;
+      (globalThis as any).clockImage = image;
+    }, images[2]);
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page
       .getByRole("button", { name: "Resume automatic tracking", exact: true })
       .click();
-    clock(11);
     await expect(
-      page.getByText("Following Deadlock’s game clock", { exact: true }),
-    ).toBeVisible();
-    socket.send(
-      JSON.stringify({
-        kind: "end",
-        matchId: "123",
-        observedAt: Date.now(),
-        sequence: sequence++,
-      }),
-    );
-    await expect(page.getByText("Match ended", { exact: true })).toBeVisible();
+      page.getByText("Following the visible game clock", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
     expect(
       (await page.evaluate(() => window.companion!.getTimer())).log.filter(
-        (a) => a.name === "Automatic test",
+        (a) => a.name === "Screen clock test",
       ),
     ).toHaveLength(1);
     await page.getByLabel("Enable automatic match tracking").click();
     await expect(
       page.getByLabel("Enable automatic match tracking"),
     ).not.toBeChecked();
-    await expect(
-      page.getByText("Automatic tracking is off", { exact: true }),
-    ).toBeVisible();
+    const settingsFile = await app.evaluate(
+      ({ app }) => app.getPath("userData") + "/settings.json",
+    );
+    const saved = JSON.parse(await readFile(settingsFile, "utf8"));
+    expect(saved.captureRegion).toMatchObject({
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 72,
+    });
+    expect(saved.automaticTracking).toBe(false);
   } finally {
-    socket?.terminate();
     await app?.close();
     await rm(dir, { recursive: true, force: true });
   }

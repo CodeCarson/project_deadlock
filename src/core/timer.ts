@@ -12,6 +12,7 @@ import {
 /** The scheduler runs in Electron's main process; UI frame rate never advances the clock. */
 export class TimerEngine {
   private status: TimerStatus = "stopped";
+  private interpolate = true;
   private base = 0;
   private anchor = 0;
   private previous = 0;
@@ -29,13 +30,19 @@ export class TimerEngine {
   seconds() {
     return (
       this.base +
-      (this.status === "running"
+      (this.status === "running" && this.interpolate
         ? Math.max(0, this.now() - this.anchor) / 1000
         : 0)
     );
   }
   /** Authoritative local clock samples preserve notification boundaries between ticks. */
-  followClock(seconds: number, paused: boolean, rebase: boolean) {
+  followClock(
+    seconds: number,
+    paused: boolean,
+    rebase: boolean,
+    interpolate = true,
+  ) {
+    this.interpolate = interpolate;
     this.base = seconds;
     this.anchor = this.now();
     if (rebase) this.previous = seconds;
@@ -167,6 +174,13 @@ export class TimerEngine {
   command(raw: TimerCommand) {
     const command = commandSchema.parse(raw);
     const current = this.seconds();
+    if (!["clear", "undo-clear"].includes(command.type)) {
+      if (!this.interpolate) {
+        this.base = current;
+        this.anchor = this.now();
+      }
+      this.interpolate = true;
+    }
     switch (command.type) {
       case "start":
         if (this.status !== "running") {

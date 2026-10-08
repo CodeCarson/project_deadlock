@@ -1,6 +1,6 @@
 {
   "name": "deadlock-companion",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "A Windows Deadlock companion with public player statistics and configurable match reminders",
   "author": "Deadlock Companion contributors",
@@ -46,17 +46,21 @@
     },
     "extraResources": [
       {
-        "from": "overwolf-helper",
-        "to": "overwolf-helper"
+        "from": "scripts/capture-clock.ps1",
+        "to": "scripts/capture-clock.ps1"
       }
+    ],
+    "asarUnpack": [
+      "node_modules/**"
     ]
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
     "lucide-react": "^1.53.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "recharts": "^3.10.1",
-    "ws": "^8.22.0",
+    "tesseract.js": "^7.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -65,7 +69,6 @@
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.5",
     "electron": "^44.7.0",

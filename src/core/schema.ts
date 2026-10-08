@@ -2,6 +2,15 @@ import { z } from "zod";
 import type { ApiRequest, ApiResult } from "./api.js";
 import defaults from "../../config/timing-rules.json" with { type: "json" };
 const seconds = z.number().int().min(0).max(86400);
+export const captureRegionSchema = z
+  .object({
+    x: z.number().int().min(-100000).max(100000),
+    y: z.number().int().min(-100000).max(100000),
+    width: z.number().int().min(40).max(640),
+    height: z.number().int().min(20).max(160),
+  })
+  .strict();
+export type CaptureRegion = z.infer<typeof captureRegionSchema>;
 export const ruleSchema = z
   .object({
     id: z.string().min(1).max(80),
@@ -66,6 +75,7 @@ export const settingsSchema = z
     sound: z.enum(["chime", "pulse", "bell"]),
     speech: z.boolean(),
     automaticTracking: z.boolean().default(false),
+    captureRegion: captureRegionSchema.nullable().default(null),
     compact: z.boolean(),
     warnings: z.array(z.number().int().min(1).max(300)).max(5),
     rules: z.array(ruleSchema).max(100),
@@ -130,7 +140,19 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
 ]);
 export interface Bridge {
-  exportOverwolfHelper(): Promise<string | null>;
+  captureDisplays(): Promise<
+    {
+      id: string;
+      name: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }[]
+  >;
+  previewClock(
+    region: CaptureRegion,
+  ): Promise<{ image: string; text: string; confidence: number }>;
   resumeAutomaticTracking(): Promise<void>;
   request(request: ApiRequest): Promise<ApiResult>;
   loadSettings(): Promise<Settings>;

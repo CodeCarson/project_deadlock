@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.3.1-phase3
+        default: v0.3.2-phase3
         type: string
 
 permissions:
@@ -21,16 +21,16 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.3.1-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.3.2-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.3.1-phase3' }}
+          ref: ${{ inputs.tag || 'v0.3.2-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: "24"
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
@@ -46,6 +46,29 @@ jobs:
               throw "The built-in rule $($rule.id) is not verified and enabled."
             }
           }
+      - name: Verify native Windows tiny-screen capture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $start = [System.Diagnostics.ProcessStartInfo]::new()
+          $start.FileName = "$env:SystemRoot/System32/WindowsPowerShell/v1.0/powershell.exe"
+          $start.UseShellExecute = $false
+          $start.CreateNoWindow = $true
+          $start.RedirectStandardInput = $true
+          $start.RedirectStandardOutput = $true
+          $start.RedirectStandardError = $true
+          foreach ($arg in @('-NoLogo', '-NoProfile', '-NonInteractive', '-Command', (Get-Content scripts/capture-clock.ps1 -Raw))) { $start.ArgumentList.Add($arg) }
+          $process = [System.Diagnostics.Process]::Start($start)
+          $output = $process.StandardOutput.ReadToEndAsync()
+          $errors = $process.StandardError.ReadToEndAsync()
+          $process.StandardInput.WriteLine('{"x":0,"y":0,"width":40,"height":20,"preview":true}')
+          $process.StandardInput.Close()
+          if (!$process.WaitForExit(20000)) { $process.Kill(); throw 'Native capture timed out.' }
+          $frame = $output.GetAwaiter().GetResult() | ConvertFrom-Json
+          if ($process.ExitCode -ne 0 -or !$frame.image -or $frame.observedAt -le 0) { throw "Native capture failed: $($errors.GetAwaiter().GetResult())" }
+          $bytes = [Convert]::FromBase64String($frame.image)
+          if ([BitConverter]::ToString($bytes[0..7]) -ne '89-50-4E-47-0D-0A-1A-0A') { throw 'Capture did not return PNG pixels.' }
+          Write-Output 'Native Windows 40 x 20 crop verified; no image saved.'
       - name: Build the portable Windows application
         run: npm run dist:win:zip
       - name: Publish the prerelease with the ZIP and checksum
@@ -55,7 +78,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.3.1-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.3.2-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -72,11 +95,11 @@ jobs:
 
           Separates normal Refresh from the hourly full-history rebuild. Shows available match count, newest match date, fetch timestamp and whether the provider reported calling Steam. The provider can return incomplete indexed history; a full rebuild requires provider Steam-bot access and does not guarantee complete career totals.
 
-          Adds an EXPERIMENTAL optional Overwolf helper for documented match_clock and game_paused events. Open Settings and export a paired helper, then load it using Overwolf development options. Overwolf requires developer whitelisting for unreleased/unpacked apps; this helper is not Appstore-approved. Starts at the first valid live clock sample, follows pauses and match end, pauses on missing events, and preserves manual controls. No overlay, capture, recording, ads or remote requests. Automatic tracking is off until setup. Live Windows game events and FPS/frame-time impact are not verified. No zero-performance-impact claim is made. See README.md and overwolf-helper/README.md for setup and the first-match checklist.
+          Replaces Overwolf with an EXPERIMENTAL standalone Windows cropped-clock reader. No Overwolf installation or developer approval required. In Settings, select the display, adjust the tiny clock rectangle, Test clock crop, Save clock area, then enable automatic tracking. Bring Deadlock to the foreground. Local bundled OCR reads about once per second; images stay in memory with no recording or uploads. Only the configured rectangle is captured. Missing, stale or unreadable samples pause reminders. Manual controls remain available. Practice/spectator clocks cannot be distinguished; match-end detection is inferred from the clock disappearing. See README.md for calibration and transition limitations. Live game recognition and FPS/frame-time impact remain unverified; zero performance impact is not promised.
 
           Keeps the editable enabled October 6 timing presets. Customised rules are preserved. Restore defaults resets built-ins while keeping personal reminders and audio preferences.
 
-          Unit, browser and native Electron checks cover analytics, history, persistence, API handling and minimised reminder audio. Helper unit/protocol tests and native Electron tests use simulated SDK events, not a running game. The Windows runner additionally runs unit tests and builds this ZIP with helper resources. Use Test sound on your PC to check your audio output. Independent community project; not affiliated with Valve.
+          Unit, browser and native Electron checks cover analytics, history, persistence, API handling and minimised reminder audio. Native OCR tests use generated clock images and a simulated OS crop source, not a running game. The Windows runner additionally tests the real tiny-screen-crop adapter, runs unit tests and builds this ZIP with local OCR resources. Use Test sound on your PC to check your audio output. Independent community project; not affiliated with Valve.
           '@ | Set-Content -Encoding utf8NoBOM release/notes.md
           $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
           if ($LASTEXITCODE -eq 0) {

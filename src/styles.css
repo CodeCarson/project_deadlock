@@ -2313,3 +2313,11 @@ main {
 .helper-folder {
   overflow-wrap: anywhere;
 }
+.capture-controls input {
+  max-width: 100px;
+}
+.clock-crop-preview img {
+  max-width: 100%;
+  image-rendering: auto;
+  border: 1px solid #444;
+}

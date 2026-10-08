@@ -4,12 +4,11 @@ import {
   ipcMain,
   powerSaveBlocker,
   shell,
-  dialog,
+  screen,
 } from "electron";
-import { readFile, writeFile, mkdir, rename, cp } from "node:fs/promises";
-import { randomBytes } from "node:crypto";
-import { MatchDetection } from "../src/core/detection.js";
-import { startOverwolfServer, HELPER_PORT } from "./overwolf-server.js";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
+import { ClockReader } from "../src/core/clock-reader.js";
+import { ClockCapture } from "./clock-capture.js";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { ApiClient } from "../src/core/api.js";
@@ -17,6 +16,7 @@ import { migrateSettings } from "../src/core/settings.js";
 import { TimerEngine } from "../src/core/timer.js";
 import {
   defaultSettings,
+  captureRegionSchema,
   settingsSchema,
   type Settings,
   type Alert,
@@ -29,8 +29,7 @@ else {
   let blocker: number | undefined;
   let settings: Settings = structuredClone(defaultSettings);
   let engine: TimerEngine;
-  let detection: MatchDetection;
-  let helperServer: Awaited<ReturnType<typeof startOverwolfServer>> | undefined;
+  let detection: ClockReader;
   let saveQueue = Promise.resolve();
   const atomicWrite = (path: string, contents: string) => {
     const task = saveQueue.then(async () => {
@@ -113,76 +112,147 @@ else {
         return api.request(raw);
       });
       engine = new TimerEngine(settings);
-      detection = new MatchDetection(engine);
-      let token: string;
-      const pairingFile = join(dataRoot, "overwolf-pairing.json");
-      try {
-        const stored = JSON.parse(await readFile(pairingFile, "utf8"));
-        if (!/^[a-f0-9]{64}$/.test(stored.token))
-          throw new Error("Invalid pairing key");
-        token = stored.token;
-      } catch {
-        token = randomBytes(32).toString("hex");
-        await mkdir(dataRoot, { recursive: true });
-        await writeFile(pairingFile, JSON.stringify({ token }), {
-          mode: 0o600,
-        });
-      }
-      let serverQueue = Promise.resolve();
-      const reconcileHelper = () => {
-        detection.configure(settings.automaticTracking);
-        serverQueue = serverQueue.then(async () => {
-          if (!settings.automaticTracking && helperServer) {
-            await helperServer.close();
-            helperServer = undefined;
-          }
-          if (settings.automaticTracking && !helperServer) {
-            try {
-              helperServer = await startOverwolfServer(token, detection);
-            } catch {
-              detection.error(
-                "Local helper connection unavailable — use manual controls or restart the app",
-              );
-            }
-          }
-        });
-        return serverQueue;
+      detection = new ClockReader(engine);
+      const capture = new ClockCapture(
+        app.isPackaged ? process.resourcesPath : join(here, "../.."),
+        app.isPackaged
+          ? join(process.resourcesPath, "app.asar.unpacked/node_modules")
+          : undefined,
+      );
+      let generation = 0;
+      let captureTimer: ReturnType<typeof setTimeout> | undefined;
+      let jobs = Promise.resolve();
+      const serial = <T>(task: () => Promise<T>): Promise<T> => {
+        const result = jobs.then(task);
+        jobs = result.then(
+          () => {},
+          () => {},
+        );
+        return result;
       };
-      await reconcileHelper();
+      const pixels = (display: Electron.Display) =>
+        process.platform === "win32"
+          ? screen.dipToScreenRect(null, display.bounds)
+          : display.bounds;
+      const validateRegion = (raw: unknown) => {
+        const region = captureRegionSchema.parse(raw);
+        const allowed = screen.getAllDisplays().some((display) => {
+          const bounds = pixels(display);
+          const start = { x: bounds.x, y: bounds.y };
+          const end = {
+            x: bounds.x + bounds.width,
+            y: bounds.y + bounds.height,
+          };
+          return (
+            region.x >= start.x &&
+            region.y >= start.y &&
+            region.x + region.width <= end.x &&
+            region.y + region.height <= end.y
+          );
+        });
+        if (!allowed)
+          throw new Error("Choose a clock area entirely inside one display.");
+        return region;
+      };
+      const reconcileCapture = async () => {
+        const run = ++generation;
+        clearTimeout(captureTimer);
+        detection.configure(settings.automaticTracking);
+        if (!settings.automaticTracking) {
+          await serial(() => capture.close());
+          return;
+        }
+        if (!settings.captureRegion) {
+          detection.error("Choose and test the clock area first");
+          return;
+        }
+        if (!ClockCapture.supported()) {
+          detection.error(
+            "Clock capture requires Windows — use manual controls here",
+          );
+          return;
+        }
+        const sample = async () => {
+          const started = Date.now();
+          await serial(async () => {
+            if (run !== generation) return;
+            if (detection.snapshot().manualOverride) return;
+            try {
+              const region = validateRegion(settings.captureRegion);
+              await capture.initialise();
+              if (run !== generation) return;
+              const frame = await capture.frame(region, false);
+              if (!frame.image) {
+                if (run === generation) detection.missing();
+                return;
+              }
+              const result = await capture.recognise(frame.image);
+              if (run === generation)
+                detection.reading(
+                  result.text,
+                  result.confidence,
+                  frame.observedAt,
+                );
+            } catch {
+              if (run === generation) {
+                detection.missing();
+                detection.error(
+                  "Clock reader unavailable — check the crop and use manual controls",
+                );
+              }
+            }
+          });
+          if (run === generation)
+            captureTimer = setTimeout(
+              () => void sample(),
+              Math.max(100, 1000 - (Date.now() - started)),
+            );
+        };
+        void sample();
+      };
+      await reconcileCapture();
       const snapshot = () => ({
         ...engine.snapshot(),
         detection: detection.snapshot(),
       });
-      ipcMain.handle("overwolf:resume", (event) => {
+      ipcMain.handle("capture:resume", (event) => {
         trusted(event);
         detection.resume();
       });
-      ipcMain.handle("overwolf:export", async (event) => {
+      ipcMain.handle("capture:displays", (event) => {
         trusted(event);
-        if (!window) return null;
-        const selection = await dialog.showOpenDialog(window, {
-          title: "Choose where to save the Overwolf helper",
-          properties: ["openDirectory", "createDirectory"],
+        return screen.getAllDisplays().map((display) => {
+          const bounds = pixels(display);
+          const start = { x: bounds.x, y: bounds.y };
+          const end = {
+            x: bounds.x + bounds.width,
+            y: bounds.y + bounds.height,
+          };
+          return {
+            id: String(display.id),
+            name: display.label || `Display ${display.id}`,
+            x: start.x,
+            y: start.y,
+            width: end.x - start.x,
+            height: end.y - start.y,
+          };
         });
-        if (selection.canceled) return null;
-        const folder = join(
-          selection.filePaths[0],
-          `Deadlock Companion Helper ${Date.now()}`,
-        );
-        const source = app.isPackaged
-          ? join(process.resourcesPath, "overwolf-helper")
-          : join(here, "../../overwolf-helper");
-        await cp(source, folder, {
-          recursive: true,
-          errorOnExist: true,
-          force: false,
+      });
+      ipcMain.handle("capture:preview", (event, raw) => {
+        trusted(event);
+        const region = validateRegion(raw);
+        return serial(async () => {
+          try {
+            await capture.initialise();
+            const frame = await capture.frame(region, true);
+            if (!frame.image)
+              throw new Error("Could not capture the selected clock area.");
+            const result = await capture.recognise(frame.image);
+            return { image: `data:image/png;base64,${frame.image}`, ...result };
+          } finally {
+            if (!settings.automaticTracking) await capture.close();
+          }
         });
-        await writeFile(
-          join(folder, "config.js"),
-          `window.HELPER_CONFIG = ${JSON.stringify({ endpoint: `ws://127.0.0.1:${HELPER_PORT}/timer`, token })};\n`,
-          { mode: 0o600 },
-        );
-        return folder;
       });
       ipcMain.handle("settings:load", (event) => {
         trusted(event);
@@ -195,7 +265,7 @@ else {
         sendAlerts(engine.tick());
         engine.updateSettings(next);
         settings = next;
-        await reconcileHelper();
+        await reconcileCapture();
         return next;
       });
       ipcMain.handle("timer:get", (event) => {

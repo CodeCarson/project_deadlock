@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-For a portable Windows download, use [the Phase 3 release](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.3.1-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
+For a portable Windows download, use [the Phase 3 release](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.3.2-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
 
 `npm ci` installs the locked dependencies and downloads the matching official Electron binary with checksum verification. The first installation needs Internet access to npm and GitHub release assets. Match reminders work offline. Player lookup requires Internet access; previously cached player data remains viewable during outages.
 
@@ -98,23 +98,23 @@ Defaults are in [`config/timing-rules.json`](config/timing-rules.json). Times in
 - Alerts delayed by up to 5 seconds are delivered. Older alerts and advance warnings whose event is already past are consumed silently to avoid a stale notification burst after suspension.
 - Sound errors appear in the app. Muted rules/volume never imply that audio was heard. Speech depends on OS voice availability.
 
-## Automatic match tracking — experimental Overwolf helper
+## Automatic match tracking — experimental local clock reader
 
-Version 0.3.1 includes a small background-only Overwolf helper. The official [Deadlock event documentation](https://dev.overwolf.com/ow-native/live-game-data-gep/supported-games/deadlock/) now documents `match_clock` (`MM:SS`, every second) and `game_paused` in addition to match start/end, available in Deadlock mode. The companion starts at the first fresh nonnegative clock sample with a valid match ID, including when joining mid-match. It does not assume that loading or `match_start` corresponds to game time zero. Public active-match coverage is not used.
+Version 0.3.2 replaces the Overwolf helper with a standalone Windows clock reader. No Overwolf installation or developer approval is required. It reads only a small rectangle that you configure, using Windows screen capture and bundled local OCR. Images stay in memory; no recording, image files or uploads occur. Automatic tracking is off until you configure and enable it.
 
-**Setup prerequisite:** Overwolf requires [developer whitelisting](https://dev.overwolf.com/ow-native/reference/ow-sdk-introduction#get-whitelisted-as-a-developer) for unpacked/unreleased apps. This helper is a development app, not an approved Appstore listing. Access requires submitting an app proposal through Overwolf's onboarding process; do not bypass this requirement. Source, protocol tests and installation files are ready, but actual Overwolf installation, live Deadlock events and FPS/frametime impact have not been tested in this Linux cloud.
+1. Open Deadlock with the clock visible, preferably in borderless windowed mode. Keep the same game resolution and display scaling during setup and play.
+2. In **Settings → Automatic match tracking**, choose the game display and adjust the rectangle's physical-pixel X/Y/width/height to tightly surround the clock. **Test clock crop** shows only that rectangle. Exclude scores and other numbers; the maximum crop is 640 × 160 pixels.
+3. Once the preview reads the correct clock with adequate confidence, choose **Save clock area**, then enable automatic tracking. Bring Deadlock to the foreground. Two consistent readings begin tracking at the visible time, including when joining mid-match.
+4. Compare the companion clock with the game and test a short personal reminder, pause/unpause and alt-tab. Unreadable or missing readings pause automatic reminders. Return to the game to resume. Capture may be unavailable in exclusive fullscreen; try borderless mode or use manual controls.
+5. Compare FPS/frame times in the same scene with tracking off and on. Disable it if performance suffers. Small crops and roughly one sample per second limit work, but zero performance impact is not guaranteed.
 
-1. Install/update Overwolf (0.311.0.6 or newer) and obtain developer access through its official process.
-2. In the companion, open **Settings → Automatic match tracking → Export paired helper**. Choose a parent folder. This enables automatic tracking and creates a private folder with the helper and a generated pairing key. Keep this folder and its `config.js` private.
-3. In Overwolf Settings → About → Development options, select **Load unpacked extension** and choose the exported folder containing `manifest.json`. Launch the helper if necessary. Keep Overwolf and the companion running before playing.
-4. Enter a normal Deadlock match. Verify the companion reports **Following Deadlock’s game clock**, compare its clock against the game, and test pause/unpause and a short personal reminder. Match end stops tracking.
-5. Compare FPS and frame times in the same practice scene with and without Overwolf/automatic tracking. If performance is worse, turn automatic tracking off and exit Overwolf; manual reminders remain available.
+The long-lived Windows capture helper checks the foreground process name (`deadlock` or `citadel`) and window bounds before reading the configured rectangle. Only window/process metadata is inspected; no game memory, files, injection or overlay is used. OCR runs in a worker with locally bundled models, requiring no model download during play. Disabling tracking releases the capture process and OCR worker. The explicit calibration preview can capture the selected rectangle outside the game, so check its coordinates before testing.
 
-This helper uses plain JavaScript, one background page with hardware acceleration disabled, one persistent authenticated local connection, clock/lifecycle messages and a 15-second status heartbeat. It has no overlay, recording, capture, ads, analytics, remote API requests or per-frame tasks. SDK subscriptions use `game_info` and `match_info`, the feature groups supplying clock/pause/match identity; roster/item/history fields are ignored. Minimal helper work does **not** establish zero overhead for Overwolf's runtime and event provider.
+The clock advances only on accepted samples, with no extrapolation. Low-confidence, implausible or stale readings pause it. A frozen readable clock pauses after about three seconds; it cannot run ahead while frozen. Audio can arrive slightly after an event due to sampling. Initial confirmation and resumption skip events already passed instead of replaying old alerts.
 
-Only `127.0.0.1:32145` is listened on, and only while automatic tracking is enabled. A random private key authenticates the helper. Message size/rate, schema, sequence and freshness checks limit accepted messages. Malformed or unpaired requests are rejected. The helper retains only the latest clock, does not queue old events, and reconnects with backoff when the companion is closed.
+This reads a visible clock rather than authoritative match events. Practice and spectator clocks cannot be distinguished from a normal match. A new clock near zero after at least 15 seconds without the prior clock resets notification history; other transitions may need **Reset** or manual **Sync**. Match end is inferred from the clock disappearing, not an explicit end event. Manual Start/Pause/Stop/Reset/Sync takes control until **Resume automatic tracking**. Mark cleared/Undo remains available during automatic tracking. Changing resolution, display position or scaling requires recalibration.
 
-Missing clock samples for five seconds or a disconnected helper pauses automatic reminders. A fresh clock resumes without replaying old alerts. Manual Start/Pause/Stop/Reset/Sync takes control for the current match until **Resume automatic tracking** or the next match; Mark cleared/Undo works in either mode. New match IDs reset clear marks and notification history. If events are unavailable after a patch, use manual controls. See [helper setup and verification details](overwolf-helper/README.md).
+Local OCR and scheduling are tested with generated clock images. The Windows release runner tests the actual cropped-screen adapter. Recognition of your live Deadlock HUD, exclusive-fullscreen compatibility and FPS/frame-time impact still require testing on your PC.
 
 ## Persistence
 
@@ -128,7 +128,7 @@ Match state is deliberately temporary: reopening starts at `00:00` with no clear
 npm run dist:win
 ```
 
-The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.3.1.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
+The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.3.2.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
 
 For a portable Windows folder instead of an installer:
 
@@ -157,7 +157,7 @@ For the optional live API check in the headless cloud, use `NODE_USE_ENV_PROXY=1
 - Unit tests cover event/warning boundaries, elapsed time, pause/resume/stop/reset, forward/backward sync, notification deduplication, delayed ticks, distinct conditional camp locations, rule edits, and configuration validation.
 - API unit tests cover Steam IDs/profile links, missing metrics, scored outcomes, account identity validation, transport deduplication, cache expiry, refresh/rebuild cooldowns, persisted provider provenance, stored-history rate-limit responses, and offline fallback. Analytics tests cover local-date grouping, missing metrics, badge availability and history ordering.
 - Browser tests exercise navigation, audio generation, event delivery, manual sync, persistence, player lookup, filters, expandable results, offline-cache labels, account switching, saved filters, hero charts, paginated/searchable history, rebuild requests and responsive layout. Player API responses are intercepted fixtures; this does not validate the live service.
-- The Electron test launches the **production build**, checks preload isolation, delivers an alert and starts its tone oscillators while the native window is minimised, verifies the settings file, and relaunches to confirm persistence. It also exercises API IPC with fixture responses, persists account/cache data, rejects unsupported resource requests, and verifies cached results after relaunch. A second native test exports a paired helper, sends authenticated simulated clock events, checks minimised reminder audio, game pauses, manual override and match end. These are isolated temporary profiles; SDK/live Windows operation and FPS remain unverified.
+- The Electron test launches the **production build**, checks preload isolation, delivers an alert and starts its tone oscillators while the native window is minimised, verifies the settings file, and relaunches to confirm persistence. It also exercises API IPC with fixture responses, persists account/cache data, rejects unsupported resource requests, and verifies cached results after relaunch. A second native test runs real local OCR on generated clock pixels with a simulated OS crop source, checks calibration, minimised reminder audio, missing readings, manual override and resumption. These use isolated temporary profiles; live game recognition and FPS remain unverified.
 
 For this headless Debian cloud image:
 
@@ -172,9 +172,9 @@ Tests verify scheduling and sound generation, not human audibility through a phy
 
 ## Code layout
 
-- `electron/main.ts`: desktop lifecycle, validated IPC, atomic settings storage, helper export, and background scheduler.
-- `electron/overwolf-server.ts`, `src/core/detection.ts`: authenticated loopback transport and automatic/manual ownership rules.
-- `overwolf-helper/`: background-only SDK relay and installation instructions.
+- `electron/main.ts`: desktop lifecycle, validated IPC, atomic settings storage, clock capture coordination, and background scheduler.
+- `electron/clock-capture.ts`, `scripts/capture-clock.ps1`: tiny Windows screen crops and bundled local OCR.
+- `src/core/clock-reader.ts`: sample validation, clock ownership and safe reminder resumption.
 - `electron/preload.cts`: narrow typed bridge; no general IPC or filesystem access is exposed.
 - `src/core/timer.ts`: deterministic clock and event engine, independent of React/Electron.
 - `src/core/schema.ts`: settings, rule, and command validation.
@@ -186,8 +186,8 @@ Tests verify scheduling and sound generation, not human audibility through a phy
 - `src/core/bridge.ts`: browser-only development adapter.
 - `src/App.tsx`, `src/components/RuleEditor.tsx`, `src/styles.css`: navigation, clock, queue, rule editor, and settings.
 
-The renderer has no Node integration. Context isolation, renderer sandboxing, a content security policy, sender validation, and blocked window navigation keep the desktop boundary narrow. There is no game memory access, injection, overlay, automation, or gameplay automation. Automatic clock tracking uses the optional documented Overwolf SDK relay.
+The renderer has no Node integration. Context isolation, renderer sandboxing, a content security policy, sender validation, and blocked window navigation keep the desktop boundary narrow. There is no game memory access, injection, overlay, automation, or gameplay automation. Automatic clock tracking optionally reads your configured screen rectangle locally.
 
 ## What remains
 
-The experimental Overwolf helper needs developer access and live Windows/Deadlock/FPS validation before it can be treated as dependable on your PC. Provider coverage may omit part of a player’s career; full history depends on the provider’s Steam access. Custom sound-file imports and a tray icon are also future enhancements. The Urn preset covers its first descent only; full tracking of pickups, delayed spawns and deliveries is a later timer enhancement.
+The experimental clock reader needs live Windows/Deadlock/FPS validation before it can be treated as dependable on your PC. Provider coverage may omit part of a player’s career; full history depends on the provider’s Steam access. Custom sound-file imports and a tray icon are also future enhancements. The Urn preset covers its first descent only; full tracking of pickups, delayed spawns and deliveries is a later timer enhancement.
