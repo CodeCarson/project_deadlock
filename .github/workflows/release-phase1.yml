@@ -1,0 +1,79 @@
+name: Publish Phase 1 Windows prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Phase 1 source tag
+        required: true
+        default: v0.1.0-phase1
+        type: string
+  push:
+    branches: [main]
+    paths: [.github/workflows/release-phase1.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase1-prerelease
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ inputs.tag || 'v0.1.0-phase1' }}
+    steps:
+      - name: Check out the tagged application source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag || 'v0.1.0-phase1' }}
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test the timer engine and configuration
+        run: npm test
+      - name: Build the portable Windows application
+        run: npm run dist:win:zip
+      - name: Publish the prerelease with the ZIP and checksum
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase1$') {
+            throw 'Expected a Phase 1 version tag such as v0.1.0-phase1.'
+          }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $zipName = "Deadlock Companion-$version-win.zip"
+          $zipPath = Join-Path release $zipName
+          if (!(Test-Path $zipPath)) { throw 'The Windows ZIP was not built.' }
+          $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
+          "$hash  $zipName" | Set-Content -Encoding utf8NoBOM release/SHA256SUMS.txt
+          @'
+          Phase 1 timer assistant for Windows x64. Download the ZIP under Assets, extract the entire folder, and launch Deadlock Companion.exe. Keep the extracted files together. This unsigned prerelease is intended for early testing.
+
+          Includes manual match-clock sync, pause/stop/reset, editable event rules, separate conditional respawns per location, advance warnings, three built-in sounds, optional system speech, an upcoming-event queue, and persisted settings.
+
+          The source previously passed 22 unit tests, 3 browser tests, and a native Electron test on Linux, including sound generation while minimised and persistence after relaunch. This release additionally builds the Windows ZIP on a Windows runner and reruns the unit tests. Physical audio output and interactive Windows desktop behaviour still need testing on your PC.
+
+          Game-event presets ship disabled without guessed timings. Configure and confirm timings against your current patch before enabling them. Player statistics, match history, hero analytics, and API integration are deferred.
+
+          Quick test: press Test sound, add an enabled Personal reminder at 00:30, and start the clock. With the default 15-second warning, expect alerts at 00:15 and 00:30. Repeat with the app minimised.
+
+          Independent community project; not affiliated with Valve.
+          '@ | Set-Content -Encoding utf8NoBOM release/notes.md
+          $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if (!(($existing | ConvertFrom-Json).isPrerelease)) { throw 'The existing release is not a prerelease.' }
+            gh release upload $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Phase 1' --notes-file release/notes.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed.' }
