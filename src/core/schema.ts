@@ -68,6 +68,19 @@ export const settingsSchema = z
       .record(
         z.string().regex(/^[1-9][0-9]{0,9}$/),
         z.object({
+          ratingHistory: z
+            .array(
+              z.object({
+                score: z.number().finite().min(0).max(100),
+                count: z.number().int().min(10).max(60),
+                mode: z.union([z.literal(1), z.literal(4)]),
+                at: z.number().finite().nonnegative(),
+                anchor: z.number().int().positive().safe(),
+                model: z.literal(1),
+              }),
+            )
+            .max(50)
+            .default([]),
           expectedTotal: z
             .number()
             .int()
@@ -99,6 +112,25 @@ export const settingsSchema = z
         }),
       )
       .default({}),
+    planner: z
+      .object({
+        mode: z.union([z.literal(1), z.literal(4)]).default(1),
+        cohort: z.enum(["ranked", "elite"]).default("ranked"),
+        accountIds: z
+          .array(z.string().regex(/^$|^[1-9][0-9]{0,9}$/))
+          .length(6)
+          .default(["", "", "", "", "", ""]),
+        locks: z
+          .array(z.number().int().nonnegative().safe())
+          .length(6)
+          .default([0, 0, 0, 0, 0, 0]),
+      })
+      .default({
+        mode: 1,
+        cohort: "ranked",
+        accountIds: ["", "", "", "", "", ""],
+        locks: [0, 0, 0, 0, 0, 0],
+      }),
     playerFilters: z
       .object({
         hero: z.string(),
@@ -110,6 +142,8 @@ export const settingsSchema = z
     sound: z.enum(["chime", "pulse", "bell"]),
     speech: z.boolean(),
     automaticTracking: z.boolean().default(false),
+    clockSyncSeconds: z.number().int().min(5).max(60).default(15),
+    clockGraceSeconds: z.number().int().min(5).max(300).default(90),
     captureRegion: captureRegionSchema.nullable().default(null),
     compact: z.boolean(),
     warnings: z.array(z.number().int().min(1).max(300)).max(5),
@@ -159,6 +193,8 @@ export interface TimerSnapshot {
     message: string;
     matchId?: string;
     lastClockAt?: number;
+    nextCheckAt?: number;
+    holdoverSeconds?: number;
     manualOverride: boolean;
   };
 }

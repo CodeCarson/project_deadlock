@@ -14,7 +14,11 @@ export function PlayerSearch({
   loading,
   onSelect,
   onError,
+  fieldId = "player-id",
+  label = "Find your player profile",
 }: {
+  fieldId?: string;
+  label?: string;
   input: string;
   setInput: (value: string) => void;
   loading: boolean;
@@ -107,19 +111,19 @@ export function PlayerSearch({
           }
         }}
       >
-        <label htmlFor="player-id">
+        <label htmlFor={fieldId}>
           <Search size={17} />
-          Find your player profile
+          {label}
         </label>
         <div className="lookup-input">
           <input
-            id="player-id"
+            id={fieldId}
             role="combobox"
             aria-autocomplete="list"
             aria-expanded={open && suggestions.length > 0}
-            aria-controls="player-suggestions"
+            aria-controls={`${fieldId}-suggestions`}
             aria-activedescendant={
-              active >= 0 ? `player-option-${active}` : undefined
+              active >= 0 ? `${fieldId}-option-${active}` : undefined
             }
             value={input}
             onChange={(e) => {
@@ -171,14 +175,14 @@ export function PlayerSearch({
             {message && <p role="status">{message}</p>}
             {suggestions.length > 0 && (
               <ul
-                id="player-suggestions"
+                id={`${fieldId}-suggestions`}
                 role="listbox"
                 aria-label="Suggested Steam profiles"
               >
                 {suggestions.map((profile, i) => (
                   <li
                     key={profile.account_id}
-                    id={`player-option-${i}`}
+                    id={`${fieldId}-option-${i}`}
                     role="option"
                     aria-selected={active === i}
                   >

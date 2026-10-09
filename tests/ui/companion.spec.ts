@@ -41,18 +41,21 @@ test("navigation, timer sync, audio, reminder delivery and persistence", async (
   await expect(
     page.getByRole("heading", { name: "Test reminder", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Match History", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Match History", exact: true }),
+    page.getByRole("heading", { name: "Stats", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Heroes", exact: true }).click();
   await expect(
-    page.getByRole("heading", {
-      name: "Heroes",
-      exact: true,
-    }),
+    page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("button"),
+  ).toHaveCount(4);
+  await page.route("https://api.deadlock-api.com/**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.getByRole("button", { name: "Team Planner", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Team Planner", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

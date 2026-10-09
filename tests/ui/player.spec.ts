@@ -69,7 +69,7 @@ async function mockApi(page: Page) {
 }
 async function lookup(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await page.getByLabel("Find your player profile").fill("76561197960266962");
   await page.getByRole("button", { name: "Load player", exact: true }).click();
   await expect(
@@ -110,7 +110,11 @@ test("player lookup shows exact profile, real outcome summaries, filters and mat
     page.getByText("1 of 3 available", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("Filter by game mode").selectOption("all");
-  await page.locator(".recent-match").first().locator("summary").click();
+  await page
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Explore all matches" })
+    .click();
+  await page.locator(".history-match").first().locator("summary").click();
   await expect(
     page.getByText("Match ID", { exact: false }).first(),
   ).toBeVisible();
@@ -131,7 +135,7 @@ test("account selection persists and offline cache is labelled after a failed fe
   await mockApi(page);
   await lookup(page);
   await page.reload();
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await expect(page.getByLabel("Find your player profile")).toHaveValue("1234");
   await expect(page.getByText("CACHED DATA", { exact: true })).toBeVisible();
   await page.evaluate(() => {
@@ -147,7 +151,7 @@ test("account selection persists and offline cache is labelled after a failed fe
   await page.unroute("https://api.deadlock-api.com/**");
   await page.route("https://api.deadlock-api.com/**", (route) => route.abort());
   await page.reload();
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Test player", exact: true }),
   ).toBeVisible();
@@ -192,6 +196,10 @@ test("Phase 3 views use available history, preserve filters and distinguish rebu
   await expect(
     page.getByText(/indexed history without calling Steam/),
   ).toBeVisible();
+  await page
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Explore long-term charts" })
+    .click();
   await expect(
     page.getByRole("img", { name: "Daily win rate and KDA chart" }),
   ).toBeVisible();
@@ -203,7 +211,11 @@ test("Phase 3 views use available history, preserve filters and distinguish rebu
   await expect.poll(() => historyUrls.length).toBe(2);
   expect(historyUrls[0]).not.toContain("force_refetch");
   expect(historyUrls[1]).toContain("force_refetch=true");
-  await page.getByRole("button", { name: "Heroes", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
+  await page
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Explore hero statistics" })
+    .click();
   await expect(
     page.getByRole("img", { name: "Matches played by hero" }),
   ).toBeVisible();
@@ -212,8 +224,10 @@ test("Phase 3 views use available history, preserve filters and distinguish rebu
     page.getByText("2 of 3 available", { exact: true }),
   ).toBeVisible();
   await page.reload();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await page
-    .getByRole("button", { name: "Match History", exact: true })
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Explore all matches" })
     .click();
   await expect(page.getByLabel("Filter by hero")).toHaveValue("1");
   await expect(page.locator(".history-match")).toHaveCount(2);
@@ -238,8 +252,10 @@ test("history pagination and sorting include matches beyond the first page", asy
     route.fulfill({ json: history }),
   );
   await lookup(page);
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await page
-    .getByRole("button", { name: "Match History", exact: true })
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Explore all matches" })
     .click();
   await expect(page.locator(".history-match")).toHaveCount(25);
   await page.getByRole("button", { name: "Next", exact: true }).click();

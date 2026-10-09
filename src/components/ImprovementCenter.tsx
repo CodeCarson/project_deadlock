@@ -27,6 +27,7 @@ import {
 import type { Settings } from "../core/schema";
 export type Research = Settings["playerResearch"][string];
 export const emptyResearch: Research = {
+  ratingHistory: [],
   expectedTotal: null,
   notes: [],
   goal: null,

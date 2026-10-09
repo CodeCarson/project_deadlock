@@ -79,6 +79,33 @@ test("production app, native persistence, minimized scheduling and audio generat
           (p: any) => p.account_id === 60392473,
         ),
       ).toBe(true);
+      const refs = await page.evaluate(async () => {
+        const options = { analysisMode: 1 as const, durationBand: 2 };
+        return Promise.all([
+          window.companion!.request({
+            resource: "metrics",
+            heroId: 1,
+            ...options,
+          }),
+          window.companion!.request({ resource: "heroBenchmarks", ...options }),
+          window.companion!.request({
+            resource: "synergy",
+            analysisMode: 1,
+            cohort: "elite",
+          }),
+          window.companion!.request({
+            resource: "compositions",
+            analysisMode: 1,
+            cohort: "ranked",
+          }),
+        ]);
+      });
+      expect((refs[0].data as any).deaths.percentile50).toBeGreaterThan(0);
+      expect(
+        (refs[1].data as any[]).find((r) => r.hero_id === 1).matches,
+      ).toBeGreaterThan(100);
+      expect((refs[2].data as any[]).length).toBeGreaterThan(0);
+      expect((refs[3].data as any[]).length).toBeGreaterThan(0);
     }
     await page.getByRole("button", { name: "Test sound", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Test sound played");
@@ -154,7 +181,7 @@ test("production app, native persistence, minimized scheduling and audio generat
         return Response.json(data);
       };
     });
-    await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+    await page.getByRole("button", { name: "Stats", exact: true }).click();
     await page.getByLabel("Find your player profile").fill("1234");
     await page
       .getByRole("button", { name: "Load player", exact: true })
@@ -215,13 +242,19 @@ test("production app, native persistence, minimized scheduling and audio generat
         ],
       }),
     );
-    await page.getByRole("button", { name: "Heroes", exact: true }).click();
+    await page.getByRole("button", { name: "Stats", exact: true }).click();
+    await page
+      .locator(".stats-disclosure > summary")
+      .filter({ hasText: "Explore hero statistics" })
+      .click();
     await page.getByLabel("Filter by hero").selectOption("1");
     await expect(
       page.getByRole("heading", { name: "Hero analytics", exact: true }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Stats", exact: true }).click();
     await page
-      .getByRole("button", { name: "Match History", exact: true })
+      .locator(".stats-disclosure > summary")
+      .filter({ hasText: "Explore all matches" })
       .click();
     await expect(page.locator(".history-match")).toHaveCount(1);
     const rejected = await page.evaluate(async () => {
@@ -258,9 +291,7 @@ test("production app, native persistence, minimized scheduling and audio generat
     app = await launch();
     const reopened = await app.firstWindow();
     await expect(reopened.getByRole("timer")).toHaveText("00:00");
-    await reopened
-      .getByRole("button", { name: "Dashboard", exact: true })
-      .click();
+    await reopened.getByRole("button", { name: "Stats", exact: true }).click();
     await expect(
       reopened.getByRole("heading", { name: "Native API test", exact: true }),
     ).toBeVisible();
@@ -401,36 +432,65 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
         JSON.stringify(reading),
       ).toBeGreaterThanOrEqual(80);
     }
+    const clockFrames = await page.evaluate(() =>
+      Array.from({ length: 60 }, (_, seconds) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 72;
+        const c = canvas.getContext("2d")!;
+        c.fillStyle = "black";
+        c.fillRect(0, 0, 200, 72);
+        c.fillStyle = "white";
+        c.font = "bold 48px monospace";
+        c.fillText(`00:${String(seconds).padStart(2, "0")}`, 16, 54);
+        return canvas.toDataURL("image/png").split(",")[1];
+      }),
+    );
     // Only the OS crop source is simulated. Real bundled OCR reads these pixels.
-    await app.evaluate(async ({ app }, image) => {
-      const loader = process
-        .getBuiltinModule("module")
-        .createRequire(app.getAppPath() + "/package.json");
-      const module = loader(
-        app.getAppPath() + "/dist-electron/electron/clock-capture.js",
-      );
-      module.ClockCapture.supported = () => true;
-      (globalThis as any).clockImage = image;
-      (globalThis as any).clockVisible = true;
-      module.ClockCapture.prototype.frame = async function (
-        _region: unknown,
-        preview: boolean,
-      ) {
-        return {
-          image:
-            preview || (globalThis as any).clockVisible
-              ? (globalThis as any).clockImage
-              : null,
-          observedAt: Date.now(),
+    await app.evaluate(
+      async ({ app }, { image, clockFrames }) => {
+        const loader = process
+          .getBuiltinModule("module")
+          .createRequire(app.getAppPath() + "/package.json");
+        const module = loader(
+          app.getAppPath() + "/dist-electron/electron/clock-capture.js",
+        );
+        module.ClockCapture.supported = () => true;
+        (globalThis as any).clockImage = image;
+        (globalThis as any).clockVisible = true;
+        (globalThis as any).clockDynamic = false;
+        (globalThis as any).clockFrames = clockFrames;
+        (globalThis as any).trackingFrames = 0;
+        module.ClockCapture.prototype.frame = async function (
+          _region: unknown,
+          preview: boolean,
+        ) {
+          if (!preview) (globalThis as any).trackingFrames++;
+          const state = globalThis as any;
+          return {
+            image:
+              preview || state.clockVisible
+                ? !preview && state.clockDynamic
+                  ? state.clockFrames[
+                      Math.min(
+                        59,
+                        Math.floor((Date.now() - state.clockStartAt) / 1000),
+                      )
+                    ]
+                  : state.clockImage
+                : null,
+            observedAt: Date.now(),
+          };
         };
-      };
-    }, images[3]);
+      },
+      { image: images[3], clockFrames },
+    );
     await page
       .getByRole("button", { name: "Add reminder", exact: true })
       .click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Event name").fill("Screen clock test");
-    await dialog.getByLabel("First event (MM:SS)").fill("00:03");
+    await dialog.getByLabel("First event (MM:SS)").fill("00:08");
     await dialog.getByLabel("I have verified these timings").check();
     await dialog.getByLabel("Enable audio reminders").check();
     await dialog.getByRole("button", { name: "Save rule" }).click();
@@ -480,12 +540,20 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
       .getByRole("button", { name: "Save clock area", exact: true })
       .click();
     await expect(page.getByRole("status")).toHaveText("Settings saved");
+    await app.evaluate(() => {
+      const s = globalThis as any;
+      s.clockDynamic = true;
+      s.clockStartAt = Date.now();
+      s.trackingFrames = 0;
+    });
     await page.getByLabel("Enable automatic match tracking").click();
     await expect(
       page.getByLabel("Enable automatic match tracking"),
     ).toBeChecked();
     await expect(
-      page.getByText("Following the visible game clock", { exact: true }),
+      page.getByText("Local timer running — sparse sync checks", {
+        exact: true,
+      }),
     ).toBeVisible({ timeout: 15000 });
     await page.getByRole("button", { name: "Live Match", exact: true }).click();
     await page.evaluate(() => {
@@ -513,6 +581,28 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
     await app.evaluate(() => {
       (globalThis as any).clockVisible = false;
     });
+    const beforeHidden = await page.evaluate(() =>
+      window.companion!.getTimer(),
+    );
+    await expect
+      .poll(
+        async () =>
+          (await page.evaluate(() => window.companion!.getTimer())).seconds,
+      )
+      .toBeGreaterThan(beforeHidden.seconds + 2);
+    expect(
+      (await page.evaluate(() => window.companion!.getTimer())).status,
+    ).toBe("running");
+    expect(await app.evaluate(() => (globalThis as any).trackingFrames)).toBe(
+      3,
+    );
+    await page.evaluate(async () => {
+      const settings = await window.companion!.loadSettings();
+      await window.companion!.saveSettings({
+        ...settings,
+        clockGraceSeconds: 5,
+      });
+    });
     await expect
       .poll(
         async () =>
@@ -533,13 +623,17 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
     await app.evaluate((_electron, image) => {
       (globalThis as any).clockVisible = true;
       (globalThis as any).clockImage = image;
+      (globalThis as any).clockDynamic = true;
+      (globalThis as any).clockStartAt = Date.now() - 10000;
     }, images[2]);
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page
       .getByRole("button", { name: "Resume automatic tracking", exact: true })
       .click();
     await expect(
-      page.getByText("Following the visible game clock", { exact: true }),
+      page.getByText("Local timer running — sparse sync checks", {
+        exact: true,
+      }),
     ).toBeVisible({ timeout: 10000 });
     expect(
       (await page.evaluate(() => window.companion!.getTimer())).log.filter(

@@ -108,7 +108,7 @@ test("Steam-name suggestions require the chosen account and feed postgame review
 }) => {
   await fixtures(page);
   await page.goto("/");
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await page.getByLabel("Find your player profile").fill("Same name");
   const suggestions = page.getByRole("listbox", {
     name: "Suggested Steam profiles",
@@ -122,7 +122,11 @@ test("Steam-name suggestions require the chosen account and feed postgame review
   await expect(
     page.getByRole("heading", { name: "Selected player", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Analysis", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
+  await page
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Your improvement plan" })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Improvement plan", exact: true }),
   ).toBeVisible();
@@ -152,10 +156,14 @@ test("Steam-name suggestions require the chosen account and feed postgame review
     page.getByRole("status").filter({ hasText: "Settings saved" }),
   ).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Analysis", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await expect(page.getByLabel("Match review note")).toHaveValue(
     "Check the exit before chasing after 15 minutes.",
   );
+  await page
+    .locator(".stats-disclosure > summary")
+    .filter({ hasText: "Your improvement plan" })
+    .click();
   await expect(page.getByText(/Active goal:.*at most/)).toBeVisible();
   await page.setViewportSize({ width: 650, height: 900 });
   await expect
@@ -171,7 +179,7 @@ test("coverage archives reject another account and preserve imported older games
 }) => {
   await fixtures(page);
   await page.goto("/");
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await page.getByLabel("Find your player profile").fill("1234");
   await page.getByRole("button", { name: "Load player", exact: true }).click();
   await expect(
@@ -255,7 +263,7 @@ test("a late response from an earlier Steam-name query cannot replace current su
     },
   );
   await page.goto("/");
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
   await page.getByLabel("Find your player profile").fill("Earlier");
   await expect.poll(() => first).toBe(true);
   await page.getByLabel("Find your player profile").fill("Current");

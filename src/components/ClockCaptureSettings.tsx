@@ -14,12 +14,14 @@ export function ClockCaptureSettings({
   busy,
   onSave,
   onError,
+  onTimingChange,
 }: {
   settings: Settings;
   detection?: TimerSnapshot["detection"];
   busy: boolean;
   onSave: (region: CaptureRegion, enabled: boolean) => Promise<void>;
   onError: (message: string) => void;
+  onTimingChange: (sync: number, grace: number) => Promise<void>;
 }) {
   const [displays, setDisplays] = useState<
     Awaited<ReturnType<typeof bridge.captureDisplays>>
@@ -64,9 +66,10 @@ export function ClockCaptureSettings({
     <section className="panel settings-panel automatic-panel">
       <h2>Automatic match tracking</h2>
       <p>
-        Standalone, experimental clock reader for Windows. Reads a small screen
-        crop locally, about once per second. No Overwolf, recording or uploads.
-        Performance and live-game accuracy still need testing on your PC.
+        Reads your configured clock crop locally to seed an independent timer.
+        After a few initial checks, short two-reading sync bursts run sparingly.
+        No recording or uploads. Sparse OCR reduces capture work; FPS impact
+        still depends on your PC.
       </p>
       <p>
         Enter a practice match so the clock is visible. Select its display, then
@@ -190,12 +193,61 @@ export function ClockCaptureSettings({
         Resume automatic tracking
       </button>
       <p>
-        During tracking, capture runs only while Deadlock is the foreground
-        window and the chosen area is inside it. Unreadable or inconsistent
-        readings pause reminders. Two consistent readings start or resume
-        tracking; the clock never advances between readings. A stopped clock is
-        treated as paused. A new clock near 00:00 after at least 15 seconds
-        without a readable clock resets the previous session.
+        The local timer runs between readings. Two identical readings at least
+        1.5 seconds apart pause it; advancing readings resume it. Briefly
+        alt-tabbing or opening a menu keeps the timer running for the configured
+        grace period. If the game pauses while hidden, that pause cannot be
+        detected until the clock returns. A long loss pauses reminders. New
+        near-zero clocks after a 15-second gap require confirmation before
+        reset.
+      </p>
+      <div className="history-controls">
+        <label>
+          Sync interval (seconds)
+          <select
+            aria-label="Clock sync interval"
+            value={settings.clockSyncSeconds}
+            disabled={busy}
+            onChange={(e) =>
+              void onTimingChange(
+                Number(e.target.value),
+                settings.clockGraceSeconds,
+              ).catch((error) => onError(errorMessage(error)))
+            }
+          >
+            {[5, 10, 15, 30, 60].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Hidden-clock grace (seconds)
+          <select
+            aria-label="Hidden clock grace"
+            value={settings.clockGraceSeconds}
+            disabled={busy}
+            onChange={(e) =>
+              void onTimingChange(
+                settings.clockSyncSeconds,
+                Number(e.target.value),
+              ).catch((error) => onError(errorMessage(error)))
+            }
+          >
+            {[5, 30, 60, 90, 120, 180, 300].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p>
+        Default: two checks per 15-second sync interval after initial
+        confirmation, with up to 90 seconds since the last valid reading before
+        pausing. Pause detection can take one sync interval plus confirmation.
+        Stop or Pause manually when leaving a match.
       </p>
       <p>
         Manual Start/Pause/Stop/Reset/Sync takes control until you resume

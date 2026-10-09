@@ -20,6 +20,12 @@ import {
   type Match,
   type MatchMetadata,
 } from "../core/api";
+import {
+  gameCoaching,
+  referenceKey,
+  type Reference,
+} from "../core/performance";
+import { loadEvidence } from "./evidence";
 import { reviewDetails } from "../core/coaching";
 import { formatClock } from "../core/timer";
 import type { Research } from "./ImprovementCenter";
@@ -30,19 +36,23 @@ const n = (value: number | null | undefined, d = 1) =>
 export function PostgameReview({
   accountId,
   matches,
+  allMatches = matches,
   heroes,
   research,
   onSave,
 }: {
   accountId: number;
   matches: Match[];
+  allMatches?: Match[];
   heroes: Hero[];
   research: Research;
   onSave: (r: Research) => Promise<void>;
 }) {
   const [selected, setSelected] = useState(matches[0]?.match_id ?? 0),
     [metadata, setMetadata] = useState<MatchMetadata>(),
-    [items, setItems] = useState<Item[]>([]);
+    [items, setItems] = useState<Item[]>([]),
+    [reference, setReference] = useState<Reference>(),
+    [referenceSubject, setReferenceSubject] = useState("");
   const [loading, setLoading] = useState(false),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
@@ -54,6 +64,8 @@ export function PostgameReview({
   useEffect(() => {
     generation.current++;
     setMetadata(undefined);
+    setReference(undefined);
+    setReferenceSubject("");
     setLoading(false);
     setError("");
     setSource("");
@@ -61,6 +73,17 @@ export function PostgameReview({
     setNote(
       research.notes.find((n) => n.matchId === match?.match_id)?.text ?? "",
     );
+    if (match && (match.game_mode === 1 || match.game_mode === 4)) {
+      const token = generation.current;
+      void loadEvidence([match], () => token !== generation.current).then(
+        (result) => {
+          if (token === generation.current) {
+            setReference(result.evidence[referenceKey(match)]);
+            setReferenceSubject(referenceKey(match));
+          }
+        },
+      );
+    }
     return () => {
       generation.current++;
     };
@@ -74,8 +97,13 @@ export function PostgameReview({
       const results = await Promise.allSettled([
         bridge.request({ resource: "metadata", matchId: match.match_id }),
         bridge.request({ resource: "items" }),
+        loadEvidence([match], () => token !== generation.current),
       ]);
       if (token !== generation.current) return;
+      if (results[2].status === "fulfilled") {
+        setReference(results[2].value.evidence[referenceKey(match)]);
+        setReferenceSubject(referenceKey(match));
+      }
       if (results[0].status === "rejected") throw results[0].reason;
       const data = metadataSchema.parse(results[0].value.data);
       const player = reviewDetails(data, accountId).player;
@@ -108,6 +136,15 @@ export function PostgameReview({
     metadata.match_info.players.some((p) => p.account_id === accountId)
       ? reviewDetails(metadata, accountId)
       : undefined;
+  const coaching = match
+    ? gameCoaching(
+        { ...match, account_id: accountId },
+        allMatches,
+        heroes.find((h) => h.id === match.hero_id),
+        referenceSubject === referenceKey(match) ? reference : undefined,
+        metadata,
+      )
+    : undefined;
   const duration = metadata?.match_info.duration_s ?? 0;
   const income = detail?.final;
   const sumIncome = (
@@ -197,6 +234,67 @@ export function PostgameReview({
           {loading ? "Loading review…" : "Load detailed review"}
         </button>
       </div>
+      {coaching && (
+        <section className="match-coaching">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">
+                #{match!.match_id} · {coaching.name}
+              </span>
+              <h3>Your next-game focus</h3>
+              <p>{coaching.identity}</p>
+            </div>
+          </div>
+          <div className="coaching-pair">
+            <article>
+              <h4>{coaching.title}</h4>
+              {coaching.weakest ? (
+                <p>
+                  {coaching.weakest.label}:{" "}
+                  <strong>{n(coaching.weakest.value)}</strong> versus{" "}
+                  {n(coaching.weakest.expected)} reference. Compared with{" "}
+                  {coaching.weakest.source}.{" "}
+                  {coaching.weakest.score >= 40
+                    ? "This is the least strong measured area, not proof that you played badly."
+                    : "This is an observed gap to review, not proof of an avoidable mistake."}
+                </p>
+              ) : (
+                <p>
+                  No reliable statistical weakness is identifiable yet. Load a
+                  detailed review for hero-specific community comparisons.
+                </p>
+              )}
+            </article>
+            <article>
+              <h4>One change for next game</h4>
+              <p>{coaching.action}</p>
+              <small>{coaching.role}</small>
+            </article>
+          </div>
+          <button
+            className="button secondary small"
+            onClick={() =>
+              setNote((old) =>
+                `${old}${old ? "\n\n" : ""}${coaching.name} — ${coaching.weakest?.label ?? "Decision review"}: ${coaching.action}`.slice(
+                  0,
+                  1500,
+                ),
+              )
+            }
+          >
+            Add this focus to my note
+          </button>
+          {reference && (
+            <p className="muted">
+              Community comparison: last 30 days · {reference.matches} indexed
+              hero games · fetched{" "}
+              {new Date(reference.fetchedAt).toLocaleString()}
+              {reference.stale ? " · saved offline data" : ""}. Quantile sample
+              counts are not separately reported.
+            </p>
+          )}
+        </section>
+      )}
       {error && (
         <p role="status" className="review-error">
           {error}

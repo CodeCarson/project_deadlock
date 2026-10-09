@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.4.1-phase3
+        default: v0.5.0-phase3
         type: string
 
 permissions:
@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.4.1-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.5.0-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.4.1-phase3' }}
+          ref: ${{ inputs.tag || 'v0.5.0-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -78,7 +78,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.4.1-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.5.0-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -89,25 +89,27 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
           "$hash  $zipName" | Set-Content -Encoding utf8NoBOM release/SHA256SUMS.txt
           @'
-          Windows x64 stats and improvement update. Extract the entire ZIP and launch Deadlock Companion.exe. Keep the extracted files together. Existing settings, player selection, reminders and clock configuration use the same local profile.
+          Windows x64 personal-homebase and smart-clock update. Close the app, extract the entire ZIP and launch Deadlock Companion.exe. Existing settings, reminders, notes, goals and clock crop are preserved.
 
-          Search by Steam display name with debounced indexed suggestions, avatar/account-ID disambiguation and keyboard selection. Numeric IDs and profile links remain supported. Names are not automatically matched to the first result.
+          Four main tabs: Stats, Team Planner, Live Match and Settings. Match history, hero tables and long-term charts are expandable sections in Stats.
 
-          Analysis balances survival, combat, farming and hero results. Compare equal scored-game windows within one mode, explore duration-weighted rolling rates and sample-aware hero win rates, and save one goal for your next ten new scored games. Review prompts describe observed changes without claiming their cause.
+          The first readable clock seeds an independent local timer. After three initial checks, sparse two-reading bursts correct drift; default gap is 15 seconds. Two identical readings separated by at least 1.5 seconds pause it. Brief menus and alt-tabs keep the timer running, with a default 90-second limit since the last valid reading. Sync/grace intervals are editable. A pause while hidden cannot be detected until the clock returns; sparse checks can delay pause detection. Stop/Pause manually when leaving a match. FPS impact remains dependent on the PC.
 
-          Load detailed postgame metadata on demand: kill participation, complete-team wealth/damage shares, recorded death timing, sampled resource/combat charts, recorded income counters and item events. Missing or incomplete fields stay unavailable. Income counters may not represent all earned souls. Current item names do not reconstruct a historical final build. Save per-match notes in a persistent local journal.
+          Per-game coaching compares the played hero and game duration with personal/community data, identifies a measured weakness or relative opportunity and offers one next-game focus with role context. Add the focus to a saved journal note.
 
-          History refreshes retain older collected matches. A coverage panel separates provider records from retained records, accepts your own estimated career total, and exports/imports validated same-account JSON history archives. Goals and journal notes remain in local settings, separate from history exports. The API has no pagination for older matches. Its indexed history can be incomplete; full-history rebuilds require provider Steam-bot access and do not guarantee a complete career total. Consult deadlock-api.com for current access instructions.
+          Companion performance ranks and best-three heroes use same-hero/mode/duration public quantiles, transparent weights and sample shrinkage. At least ten measured games are required for a custom rank, and five per hero for a recommendation. Ranked and unranked players can use it; private/bot/unknown modes are excluded. The custom bands estimate recorded performance and do not reveal hidden Valve MMR.
 
-          Preserves the experimental standalone Windows cropped-clock reader from 0.3.3 and the editable enabled October 6 timing presets. Live game OCR reliability and FPS impact remain unverified. Manual timer controls remain available.
+          Team Planner resolves Steam-name suggestions, accepts unique player accounts and optional hero locks, and matches personal experience to recorded ranked lineups or pair-based alternatives. All-ranked and Ascendant/Eternus evidence cohorts use the last 30 days. Full-lineup samples and intervals are displayed separately from planner fit. The API has no verified pro-match source; co-occurrence is not causal synergy and fit is not a predicted team win probability.
 
-          Unit, browser and native Electron checks cover search, analytics, detailed review, archive import, persistence, API handling and minimised audio. The live desktop check verifies public search/history/metadata/items/profile endpoints. The Windows runner also tests the native tiny-screen-crop adapter and builds the ZIP with bundled local OCR resources. Independent community project; not affiliated with Valve.
+          Keeps durable collected-history archives and provider coverage instructions. The API may still omit career games; Steam-bot access controls full rebuilds. No Steam credentials are entered in the app.
+
+          Validated with 71 unit, 14 browser and two production Electron tests, including live reference API calls, saved data, unique-hero assignment and minimised local-clock audio without continuous images. The Windows runner also checks native tiny-screen capture and packages bundled local OCR resources. Independent community project; not affiliated with Valve.
           '@ | Set-Content -Encoding utf8NoBOM release/notes.md
           $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
           if ($LASTEXITCODE -eq 0) {
             if (!(($existing | ConvertFrom-Json).isPrerelease)) { throw 'The existing release is not a prerelease.' }
             gh release upload $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
           } else {
-            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Stats & improvement' --notes-file release/notes.md
+            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Personal homebase & smart clock' --notes-file release/notes.md
           }
           if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed.' }

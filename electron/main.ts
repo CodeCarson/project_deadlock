@@ -161,7 +161,11 @@ else {
       const reconcileCapture = async () => {
         const run = ++generation;
         clearTimeout(captureTimer);
-        detection.configure(settings.automaticTracking);
+        detection.configure(
+          settings.automaticTracking,
+          settings.clockSyncSeconds,
+          settings.clockGraceSeconds,
+        );
         if (!settings.automaticTracking) {
           await serial(() => capture.close());
           return;
@@ -177,7 +181,6 @@ else {
           return;
         }
         const sample = async () => {
-          const started = Date.now();
           await serial(async () => {
             if (run !== generation) return;
             if (detection.snapshot().manualOverride) return;
@@ -209,7 +212,7 @@ else {
           if (run === generation)
             captureTimer = setTimeout(
               () => void sample(),
-              Math.max(100, 1000 - (Date.now() - started)),
+              detection.nextSampleDelay(),
             );
         };
         void sample();
@@ -222,6 +225,7 @@ else {
       ipcMain.handle("capture:resume", (event) => {
         trusted(event);
         detection.resume();
+        void reconcileCapture();
       });
       ipcMain.handle("capture:displays", (event) => {
         trusted(event);

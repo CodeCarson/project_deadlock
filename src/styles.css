@@ -2522,3 +2522,163 @@ main {
   border-radius: 6px;
   margin: 18px 0;
 }
+
+/* A smaller workspace with progressive disclosure. */
+.stats-disclosure > summary,
+.rating-method > summary {
+  cursor: pointer;
+  color: #d5c5eb;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.stats-disclosure > .panel {
+  margin-top: 18px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 18px 0;
+}
+.rating-summary small {
+  display: block;
+  margin-top: 10px;
+  color: #aaa6ba;
+}
+.rating-badge {
+  min-width: 190px;
+  border: 1px solid #5b4f70;
+  border-radius: 14px;
+  background: linear-gradient(130deg, #302738, #201f28);
+  padding: 22px;
+  display: grid;
+  gap: 8px;
+}
+.rating-badge strong {
+  font-size: 25px;
+  color: #e6d4a5;
+}
+.rating-badge span {
+  color: #bcb3c9;
+  font-size: 13px;
+}
+.top-hero-grid,
+.comp-picks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.top-hero-card,
+.comp-picks article {
+  border: 1px solid #393343;
+  border-radius: 12px;
+  background: #202029;
+  padding: 18px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.top-hero-card > span {
+  display: block;
+  color: #dfc99e;
+  font-weight: 600;
+}
+.top-hero-card > strong {
+  display: block;
+  font-size: 34px;
+  margin: 8px 0;
+}
+.top-hero-card strong small {
+  font-size: 13px;
+  color: #a8a2b5;
+}
+.match-coaching {
+  border: 1px solid #4c3c52;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  background: #25212b;
+}
+.coaching-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+.coaching-pair h4 {
+  color: #dfcda6;
+  margin: 0 0 8px;
+}
+.coaching-pair p {
+  line-height: 1.6;
+}
+.planner-roster {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.planner-slot {
+  min-width: 0;
+  border: 1px solid #3c3549;
+  border-radius: 14px;
+  padding: 16px;
+  background: #1c1d26;
+  margin: 0 0 16px;
+}
+.planner-slot legend {
+  padding: 0 8px;
+  color: #dbcaac;
+  font-weight: 600;
+}
+.planner-slot .panel {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.planner-slot .lookup-input {
+  flex-wrap: wrap;
+}
+.planner-slot .lookup-input input {
+  min-width: 120px;
+}
+.planner-slot > label {
+  display: grid;
+  gap: 6px;
+}
+.comp-picks article small {
+  display: block;
+  color: #afa8bc;
+  line-height: 1.5;
+}
+.recommended-comp details {
+  color: #bcb5c9;
+}
+@media (max-width: 850px) {
+  .planner-roster {
+    grid-template-columns: 1fr;
+  }
+  .comp-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coaching-pair {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+@media (max-width: 650px) {
+  .rating-summary {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rating-badge {
+    min-width: 0;
+  }
+  .top-hero-grid,
+  .comp-picks {
+    grid-template-columns: 1fr;
+  }
+}

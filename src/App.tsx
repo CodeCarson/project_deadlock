@@ -13,6 +13,7 @@ import {
   Download,
   History,
   LayoutDashboard,
+  Users,
   Monitor,
   Pause,
   Play,
@@ -50,20 +51,13 @@ const PlayerDashboard = lazy(() =>
     default: module.PlayerDashboard,
   })),
 );
+import { TeamPlanner } from "./components/TeamPlanner";
 import { restoreTimerDefaults } from "./core/settings";
 
-type Page =
-  | "Dashboard"
-  | "Match History"
-  | "Heroes"
-  | "Analysis"
-  | "Live Match"
-  | "Settings";
+type Page = "Stats" | "Team Planner" | "Live Match" | "Settings";
 const navigation: { name: Page; icon: LucideIcon; later?: boolean }[] = [
-  { name: "Dashboard", icon: LayoutDashboard },
-  { name: "Match History", icon: History },
-  { name: "Heroes", icon: Swords },
-  { name: "Analysis", icon: Activity },
+  { name: "Stats", icon: Activity },
+  { name: "Team Planner", icon: Users },
   { name: "Live Match", icon: Crosshair },
   { name: "Settings", icon: Settings2 },
 ];
@@ -439,7 +433,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.4.1 · Independent community tool</span>
+          <span className="version">v0.5.0 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -491,7 +485,9 @@ export default function App() {
                       ? "Focus on the fight. We’ll keep an eye on the time."
                       : page === "Settings"
                         ? "Tune your reminders to the way you play."
-                        : "Everything you need before you enter the streets."}
+                        : page === "Team Planner"
+                          ? "Build a lineup around your team's strongest heroes."
+                          : "Review your games, choose one change and track your progress."}
                   </p>
                 </div>
                 {(page === "Live Match" || page === "Settings") && (
@@ -545,7 +541,7 @@ export default function App() {
                           {settings.automaticTracking &&
                           timer.detection?.connected &&
                           !timer.detection.manualOverride
-                            ? "SCREEN CLOCK"
+                            ? "AUTO-SYNCED TIMER"
                             : "MANUAL SYNC"}
                         </span>
                         <div
@@ -812,6 +808,13 @@ export default function App() {
                       }).then(() => {})
                     }
                     onError={setError}
+                    onTimingChange={(clockSyncSeconds, clockGraceSeconds) =>
+                      save({
+                        ...settingsRef.current,
+                        clockSyncSeconds,
+                        clockGraceSeconds,
+                      }).then(() => {})
+                    }
                   />
                   <div className="settings-grid">
                     <section className="panel settings-panel">
@@ -995,10 +998,16 @@ export default function App() {
                   </div>
                 </>
               )}
-              {(page === "Dashboard" ||
-                page === "Heroes" ||
-                page === "Match History" ||
-                page === "Analysis") && (
+              {page === "Team Planner" && (
+                <TeamPlanner
+                  accountId={settings.accountId}
+                  saved={settings.planner}
+                  onSave={(planner) =>
+                    save({ ...settingsRef.current, planner }).then(() => {})
+                  }
+                />
+              )}
+              {page === "Stats" && (
                 <Suspense
                   fallback={
                     <section className="panel player-empty" role="status">
@@ -1007,7 +1016,7 @@ export default function App() {
                   }
                 >
                   <PlayerDashboard
-                    view={page}
+                    view="Stats"
                     savedFilters={settings.playerFilters}
                     research={settings.playerResearch[settings.accountId]}
                     onResearchChange={(research) =>

@@ -40,6 +40,7 @@ import {
   type Research,
 } from "./ImprovementCenter";
 import { PostgameReview } from "./PostgameReview";
+import { PerformanceRating } from "./PerformanceRating";
 import { HistoryCoverage } from "./HistoryCoverage";
 import { formatClock } from "../core/timer";
 
@@ -68,7 +69,7 @@ export function PlayerDashboard({
   research = emptyResearch,
   onResearchChange,
 }: {
-  view?: "Dashboard" | "Heroes" | "Match History" | "Analysis";
+  view?: "Dashboard" | "Heroes" | "Match History" | "Analysis" | "Stats";
   research?: Research;
   onResearchChange?: (research: Research) => Promise<void>;
   savedFilters?: Settings["playerFilters"];
@@ -480,29 +481,73 @@ export function PlayerDashboard({
             filters, which may not include your full career. KDA = (kills +
             assists) / max(1, deaths).
           </p>
-          {(view === "Dashboard" || view === "Heroes") && (
-            <PerformanceCharts matches={filtered} ranks={data.ranks} />
+          {view === "Stats" && !filtered.length && (
+            <section className="panel player-empty compact-empty">
+              <h2>
+                {data.history.length
+                  ? "No matches match these filters."
+                  : "No public matches available yet."}
+              </h2>
+              <p>
+                Adjust the hero, mode or period, or check the account and
+                refresh.
+              </p>
+            </section>
           )}
-          {(view === "Dashboard" || view === "Analysis") && (
-            <ImprovementCenter
-              key={`improve-${data.accountId}`}
-              matches={filtered}
-              allMatches={data.history}
+          {view === "Stats" && (
+            <PerformanceRating
+              key={`rating-${data.accountId}`}
+              matches={data.history}
               heroes={data.heroes}
-              heroFilter={hero}
               research={research}
               onSave={saveResearch}
             />
           )}
-          {view === "Analysis" && (
+          {(view === "Dashboard" || view === "Heroes") && (
+            <PerformanceCharts matches={filtered} ranks={data.ranks} />
+          )}
+          {(view === "Dashboard" ||
+            view === "Analysis" ||
+            view === "Stats") && (
+            <details className="panel stats-disclosure" open={view !== "Stats"}>
+              <summary>Your improvement plan & trends</summary>
+              <ImprovementCenter
+                key={`improve-${data.accountId}`}
+                matches={filtered}
+                allMatches={data.history}
+                heroes={data.heroes}
+                heroFilter={hero}
+                research={research}
+                onSave={saveResearch}
+              />
+            </details>
+          )}
+          {(view === "Analysis" || view === "Stats") && (
             <PostgameReview
               key={`review-${data.accountId}`}
               accountId={data.accountId}
               matches={filtered}
+              allMatches={data.history}
               heroes={data.heroes}
               research={research}
               onSave={saveResearch}
             />
+          )}
+          {view === "Stats" && (
+            <>
+              <details className="panel stats-disclosure">
+                <summary>Explore all matches</summary>
+                <MatchHistory matches={filtered} heroes={data.heroes} />
+              </details>
+              <details className="panel stats-disclosure">
+                <summary>Explore hero statistics</summary>
+                <HeroAnalytics matches={filtered} heroes={data.heroes} />
+              </details>
+              <details className="panel stats-disclosure">
+                <summary>Explore long-term charts & reported badges</summary>
+                <PerformanceCharts matches={filtered} ranks={data.ranks} />
+              </details>
+            </>
           )}
           {view === "Heroes" && (
             <HeroAnalytics matches={filtered} heroes={data.heroes} />
@@ -515,6 +560,7 @@ export function PlayerDashboard({
               key={`review-${data.accountId}`}
               accountId={data.accountId}
               matches={filtered}
+              allMatches={data.history}
               heroes={data.heroes}
               research={research}
               onSave={saveResearch}

@@ -24,6 +24,10 @@ export type Match = z.infer<typeof matchSchema>;
 export const heroSchema = z.object({
   id,
   name: z.string(),
+  hero_type: z.string().nullish(),
+  description: z
+    .object({ role: z.string().nullish(), playstyle: z.string().nullish() })
+    .nullish(),
   images: z
     .object({
       icon_image_small: z.string().nullish(),
@@ -32,6 +36,65 @@ export const heroSchema = z.object({
     .nullish(),
 });
 export type Hero = z.infer<typeof heroSchema>;
+export const quantilesSchema = z
+  .object({
+    avg: count,
+    std: count,
+    percentile1: count,
+    percentile5: count,
+    percentile10: count,
+    percentile25: count,
+    percentile50: count,
+    percentile75: count,
+    percentile90: count,
+    percentile95: count,
+    percentile99: count,
+  })
+  .refine(
+    (q) =>
+      [
+        q.percentile1,
+        q.percentile5,
+        q.percentile10,
+        q.percentile25,
+        q.percentile50,
+        q.percentile75,
+        q.percentile90,
+        q.percentile95,
+        q.percentile99,
+      ].every((v, i, a) => !i || v >= a[i - 1]),
+    "Invalid quantile ordering",
+  );
+export const metricsSchema = z.record(z.string(), quantilesSchema);
+export type MetricDistribution = z.infer<typeof quantilesSchema>;
+export const heroBenchmarkSchema = z.object({
+  hero_id: id,
+  matches: count.int(),
+  wins: count.int(),
+  losses: count.int(),
+});
+export const synergySchema = z
+  .object({
+    hero_id1: id,
+    hero_id2: id,
+    wins: count.int(),
+    matches_played: count.int(),
+  })
+  .refine((r) => r.hero_id1 !== r.hero_id2 && r.wins <= r.matches_played);
+export const compositionSchema = z
+  .object({
+    hero_ids: z.array(id).min(3).max(6),
+    wins: count.int(),
+    losses: count.int(),
+    matches: count.int(),
+  })
+  .refine(
+    (r) =>
+      new Set(r.hero_ids).size === r.hero_ids.length &&
+      r.wins + r.losses <= r.matches,
+  );
+export type Synergy = z.infer<typeof synergySchema>;
+export type Composition = z.infer<typeof compositionSchema>;
 export const profileSchema = z.object({
   account_id: id,
   personaname: z.string(),
@@ -156,7 +219,15 @@ export const apiRequestSchema = z.object({
     "search",
     "metadata",
     "items",
+    "metrics",
+    "heroBenchmarks",
+    "synergy",
+    "compositions",
   ]),
+  heroId: id.positive().optional(),
+  analysisMode: z.union([z.literal(1), z.literal(4)]).optional(),
+  durationBand: z.number().int().min(0).max(3).optional(),
+  cohort: z.enum(["ranked", "elite"]).optional(),
   query: z.string().trim().min(2).max(80).optional(),
   matchId: id.positive().optional(),
   accountId: z.number().int().min(1).max(4294967295).optional(),
@@ -202,6 +273,14 @@ export function validateResource(
   data: unknown,
 ) {
   switch (resource) {
+    case "metrics":
+      return metricsSchema.parse(data);
+    case "heroBenchmarks":
+      return z.array(heroBenchmarkSchema).max(1000).parse(data);
+    case "synergy":
+      return z.array(synergySchema).max(10000).parse(data);
+    case "compositions":
+      return z.array(compositionSchema).max(100000).parse(data);
     case "history":
       return z.array(matchSchema).parse(data);
     case "heroes":
@@ -253,6 +332,46 @@ export function parseAccount(input: string): number {
 }
 export function apiPath(raw: ApiRequest) {
   const request = apiRequestSchema.parse(raw);
+  if (
+    ["metrics", "heroBenchmarks", "synergy", "compositions"].includes(
+      request.resource,
+    )
+  ) {
+    if (!request.analysisMode)
+      throw new Error("Choose Normal or Street Brawl for reference data.");
+    const params = new URLSearchParams({
+      game_mode: request.analysisMode === 1 ? "normal" : "street_brawl",
+      min_unix_timestamp: String(
+        Math.floor(Date.now() / 86400000) * 86400 - 30 * 86400,
+      ),
+    });
+    if (
+      request.resource === "metrics" ||
+      request.resource === "heroBenchmarks"
+    ) {
+      if (request.durationBand === undefined)
+        throw new Error("A duration band is required.");
+      params.set("match_mode", "ranked,unranked");
+      const limits = [0, 1200, 1800, 2400, 14400];
+      params.set("min_duration_s", String(limits[request.durationBand]));
+      params.set(
+        "max_duration_s",
+        String(limits[request.durationBand + 1] - 1),
+      );
+      if (request.resource === "metrics") {
+        if (!request.heroId)
+          throw new Error("A hero is required for the comparison.");
+        params.set("hero_ids", String(request.heroId));
+      }
+      return `/v1/analytics/${request.resource === "metrics" ? "player-stats/metrics" : "hero-stats"}?${params}`;
+    }
+    params.set("match_mode", "ranked");
+    if (request.cohort === "elite") params.set("min_average_badge", "101");
+    params.set("min_matches", "20");
+    if (request.resource === "compositions")
+      params.set("comb_size", request.analysisMode === 1 ? "6" : "3");
+    return `/v1/analytics/${request.resource === "synergy" ? "hero-synergy-stats" : "hero-comb-stats"}?${params}`;
+  }
   if (request.resource === "heroes")
     return "/v1/assets/heroes?only_active=true";
   if (request.resource === "ranks") return "/v1/assets/ranks";
@@ -292,7 +411,11 @@ export class ApiClient {
     const key =
       request.resource === "search"
         ? `search-${[...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(request.query!.toLowerCase())))].map((v) => v.toString(16).padStart(2, "0")).join("")}`
-        : `${request.resource}-${request.resource === "metadata" ? request.matchId : (request.accountId ?? "all")}`;
+        : ["metrics", "heroBenchmarks", "synergy", "compositions"].includes(
+              request.resource,
+            )
+          ? `${request.resource}-${request.analysisMode}-${request.resource === "metrics" ? request.heroId : "all"}-${request.durationBand ?? "all"}-${request.cohort ?? "ranked"}`
+          : `${request.resource}-${request.resource === "metadata" ? request.matchId : (request.accountId ?? "all")}`;
     const pending = this.pending.get(key);
     if (pending) return pending;
     const result = this.load(request, key).finally(() =>
@@ -318,7 +441,11 @@ export class ApiClient {
       request.resource,
     )
       ? 86400000
-      : 300000;
+      : ["metrics", "heroBenchmarks", "synergy", "compositions"].includes(
+            request.resource,
+          )
+        ? 21600000
+        : 300000;
     if (
       cached &&
       !request.refresh &&
