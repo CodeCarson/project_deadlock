@@ -305,7 +305,13 @@ else {
           },
         });
         window.webContents.setWindowOpenHandler(({ url }) => {
-          if (url === "https://api.deadlock-api.com/docs")
+          if (
+            [
+              "https://api.deadlock-api.com/docs",
+              "https://deadlock-api.com/",
+              "https://deadlock-api.com",
+            ].includes(url)
+          )
             void shell.openExternal(url);
           return { action: "deny" };
         });

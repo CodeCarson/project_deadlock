@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.4.0-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
+For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.4.1-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
 
 `npm ci` installs the locked dependencies and downloads the matching official Electron binary with checksum verification. The first installation needs Internet access to npm and GitHub release assets. Match reminders work offline. Player lookup requires Internet access; previously cached player data remains viewable during outages.
 
@@ -148,7 +148,7 @@ Match state is deliberately temporary: reopening starts at `00:00` with no clear
 npm run dist:win
 ```
 
-The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.4.0.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
+The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.4.1.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
 
 For a portable Windows folder instead of an installer:
 

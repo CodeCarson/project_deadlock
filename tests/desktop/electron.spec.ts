@@ -163,6 +163,35 @@ test("production app, native persistence, minimized scheduling and audio generat
       page.getByRole("heading", { name: "Native API test", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("API RESPONSE", { exact: true })).toBeVisible();
+    await app.evaluate(({ shell }) => {
+      const state = globalThis as typeof globalThis & {
+        externalLinks: string[];
+      };
+      state.externalLinks = [];
+      shell.openExternal = async (url: string) => {
+        state.externalLinks.push(url);
+      };
+    });
+    await page.locator(".history-coverage summary").click();
+    await page
+      .getByRole("link", { name: "account/access website", exact: true })
+      .click();
+    await page
+      .getByRole("link", {
+        name: "provider's match-history documentation",
+        exact: true,
+      })
+      .click();
+    const openedLinks = await app.evaluate(
+      () =>
+        (globalThis as typeof globalThis & { externalLinks: string[] })
+          .externalLinks,
+    );
+    expect(openedLinks).toEqual([
+      "https://deadlock-api.com/",
+      "https://api.deadlock-api.com/docs",
+    ]);
+    await page.locator(".history-coverage summary").click();
     await page
       .getByLabel("Match review note")
       .fill("Native journal persistence check");

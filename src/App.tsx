@@ -439,7 +439,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.4.0 · Independent community tool</span>
+          <span className="version">v0.4.1 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
