@@ -53,11 +53,17 @@ const PlayerDashboard = lazy(() =>
 import { restoreTimerDefaults } from "./core/settings";
 
 type Page =
-  "Dashboard" | "Match History" | "Heroes" | "Live Match" | "Settings";
+  | "Dashboard"
+  | "Match History"
+  | "Heroes"
+  | "Analysis"
+  | "Live Match"
+  | "Settings";
 const navigation: { name: Page; icon: LucideIcon; later?: boolean }[] = [
   { name: "Dashboard", icon: LayoutDashboard },
   { name: "Match History", icon: History },
   { name: "Heroes", icon: Swords },
+  { name: "Analysis", icon: Activity },
   { name: "Live Match", icon: Crosshair },
   { name: "Settings", icon: Settings2 },
 ];
@@ -401,6 +407,7 @@ export default function App() {
           {navigation.map(({ name, icon: Icon, later }) => (
             <button
               key={name}
+              aria-label={name}
               className={`nav-item ${page === name ? "active" : ""}`}
               onClick={() => setPage(name)}
             >
@@ -432,7 +439,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.3.3 · Independent community tool</span>
+          <span className="version">v0.4.0 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -990,7 +997,8 @@ export default function App() {
               )}
               {(page === "Dashboard" ||
                 page === "Heroes" ||
-                page === "Match History") && (
+                page === "Match History" ||
+                page === "Analysis") && (
                 <Suspense
                   fallback={
                     <section className="panel player-empty" role="status">
@@ -1001,6 +1009,16 @@ export default function App() {
                   <PlayerDashboard
                     view={page}
                     savedFilters={settings.playerFilters}
+                    research={settings.playerResearch[settings.accountId]}
+                    onResearchChange={(research) =>
+                      save({
+                        ...settingsRef.current,
+                        playerResearch: {
+                          ...settingsRef.current.playerResearch,
+                          [settings.accountId]: research,
+                        },
+                      })
+                    }
                     onFiltersChange={(playerFilters) =>
                       change({ playerFilters })
                     }

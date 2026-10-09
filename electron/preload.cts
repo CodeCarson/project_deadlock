@@ -10,6 +10,8 @@ const bridge: Bridge = {
   captureDisplays: () => ipcRenderer.invoke("capture:displays"),
   previewClock: (region) => ipcRenderer.invoke("capture:preview", region),
   resumeAutomaticTracking: () => ipcRenderer.invoke("capture:resume"),
+  importHistory: (accountId, archive) =>
+    ipcRenderer.invoke("api:importHistory", accountId, archive),
   request: (request) => ipcRenderer.invoke("api:request", request),
   loadSettings: () => ipcRenderer.invoke("settings:load"),
   saveSettings: (settings: Settings) =>

@@ -1,8 +1,8 @@
-# Deadlock Companion — Phase 3
+# Deadlock Companion — Stats & improvement
 
-A Windows desktop companion you can leave on your second monitor. Phase 3 adds dedicated hero analytics, searchable paginated match history, daily win-rate/KDA charts, reported rank trends where available, saved filters, and clearer API history coverage to the Electron timer assistant.
+A Windows desktop companion you can leave on your second monitor. Steam-name suggestions, a balanced improvement plan, detailed postgame reviews, saved goals and a local match journal turn the player dashboard into a place to review decisions over time. The Electron timer assistant and optional cropped-clock reader remain available.
 
-**Validation:** public history, exact Steam profile lookup, heroes, and ranks were checked live on 2026-10-08. Unit/browser tests use API fixtures; the opt-in native smoke check uses the live service. Enabled timer presets were checked against current wiki mechanics and the latest released update listed there (2026-10-06). Valve's forum currently returns a browser challenge to this cloud, so patch text was checked through the wiki's linked update pages.
+**Validation:** public history, exact Steam profile lookup, Steam-name suggestions, match metadata, items, heroes, and ranks were checked live through the desktop bridge on 2026-10-09. Unit/browser tests use API fixtures; the opt-in native smoke check uses the live service. Enabled timer presets were checked against current wiki mechanics and the latest released update listed there (2026-10-06). Valve's forum currently returns a browser challenge to this cloud, so patch text was checked through the wiki's linked update pages.
 
 ## Install and launch on Windows
 
@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-For a portable Windows download, use [the Phase 3 release](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.3.3-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
+For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.4.0-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
 
 `npm ci` installs the locked dependencies and downloads the matching official Electron binary with checksum verification. The first installation needs Internet access to npm and GitHub release assets. Match reminders work offline. Player lookup requires Internet access; previously cached player data remains viewable during outages.
 
@@ -32,13 +32,33 @@ This starts Vite, the Electron TypeScript compiler, and Electron. Close the term
 
 ## Player dashboard
 
-Open **Dashboard**, enter a numeric Steam account ID, SteamID64, `[U:1:accountID]`, a Steam `/profiles/` URL, or a numeric Statlocker/DeadlockTracker `/profile/` URL, then choose **Load player**. Vanity names need their numeric Steam ID. No Steam login, Statlocker API key, or scraping is used.
+Open **Dashboard**, enter a numeric Steam account ID, SteamID64, `[U:1:accountID]`, a Steam `/profiles/` URL, or a numeric Statlocker/DeadlockTracker `/profile/` URL, then choose **Load player**. Or type at least two characters of a Steam display name and choose an indexed suggestion. Results show the name, avatar and account ID so duplicate names can be distinguished; a name is never automatically assigned to an account. Arrow keys and Enter select suggestions. Steam vanity URLs still need their numeric Steam ID or display name. No Steam login, Statlocker API key, or scraping is used.
 
-The app calls fixed public endpoints on `https://api.deadlock-api.com`: player match history, exact Steam account lookup, active heroes, and ranks. The API contract was checked against the official `deadlock-api/openapi-clients` schema and `deadlock-api/deadlock-api` source (source commit `db8b0e8`, 2026-10-08). These public endpoints were successfully tested live through the desktop bridge. The player-card endpoint requires a Patreon subscription and is not used by the dashboard.
+The app calls fixed public endpoints on `https://api.deadlock-api.com`: player match history, exact Steam account lookup, indexed Steam-name search, active heroes, ranks, match metadata and the current item catalog. The API contract was checked against the official `deadlock-api/openapi-clients` schema and `deadlock-api/deadlock-api` source (source commit `db8b0e8`, 2026-10-08). These public endpoints were successfully tested live through the desktop bridge. The player-card endpoint requires a Patreon subscription and is not used by the dashboard.
 
 Filters apply to the returned public history, which may not represent your complete career. Win rate counts scored wins and losses; invalid, penalised, and unscored outcomes are displayed separately. KDA uses `(kills + assists) / max(1, deaths)`. Missing metrics remain unavailable. **Net worth / min** uses each match's final net worth divided by duration; the history endpoint does not supply total earned souls per minute, so the dashboard does not claim that metric. Hero win rates and recent match details derive from the same filtered matches. A rank appears only when a match supplies a ranked display badge; its date is shown as a last-match badge, not a live current rank.
 
-Player responses are cached for five minutes, hero/rank assets for one day. **Refresh** bypasses the local cache without forcing a full Steam-history rebuild, with a 30-second local cooldown. The provider also imposes hourly limits. **Rebuild full history** requests `force_refetch=true`, with a one-hour cooldown persisted across launches. The API can retrieve Steam history only when the account has access through one of its Steam bots; without that access it returns its indexed records even for a forced rebuild. Consult the [provider documentation](https://api.deadlock-api.com/docs) for access requirements, which may require a subscription. The app shows the newest match date separately from the fetch timestamp and displays whether the provider reported calling Steam. A Steam fetch attempt still does not guarantee complete career history. Clearing the app cache cannot recover records absent from the provider. Failed requests retain previously validated cached data and show its timestamp and an offline-cache label. Corrupt or incompatible cache entries are fetched again. A failed lookup for a different account never relabels the preceding player's data.
+Player responses and name suggestions are cached for five minutes; hero/rank/item assets and match metadata for one day. **Refresh** bypasses the local cache without forcing a full Steam-history rebuild, with a 30-second local cooldown. The provider also imposes hourly limits. **Rebuild full history** requests `force_refetch=true`, with a one-hour cooldown persisted across launches. The API can retrieve Steam history only when the account has access through one of its Steam bots; without that access it returns its indexed records even for a forced rebuild. Consult the [provider documentation](https://api.deadlock-api.com/docs) for access requirements, which may require a subscription. The app shows the newest match date separately from the fetch timestamp and displays whether the provider reported calling Steam. A Steam fetch attempt still does not guarantee complete career history. Clearing the app cache cannot recover records absent from the provider. Failed requests retain previously validated cached data and show its timestamp and an offline-cache label. Corrupt or incompatible cache entries are fetched again. A failed lookup for a different account never relabels the preceding player's data.
+
+## Collecting older history
+
+Open **History coverage** to compare the latest provider response with the app's retained collection, see its oldest match date, and optionally enter your own expected career total. That total is a personal estimate, not a provider-verified count. Successful refreshes merge matches by ID instead of discarding older collected records when a later response shrinks; fresh non-missing fields take precedence.
+
+The provider has no pagination parameter for this history endpoint. If it reports **Called Steam: no**, refreshing cannot reveal matches outside its indexed database. Follow the current access instructions on [deadlock-api.com](https://deadlock-api.com), verify that your Steam account is friends with the provider's Steam bot, then use **Rebuild full history**. The provider controls availability and may require a subscription. A Steam call does not guarantee that every older match is retrievable.
+
+**Export collected history** saves a versioned JSON archive. **Import history archive** merges a previously exported archive for the same account; it does not scrape another service or manufacture missing matches. Imports require explicit account IDs on every row, reject mismatched accounts and unsupported formats, and are limited to 10 MB and 10,000 rows. The archive contains match history only. Goals and journal notes remain in the app's local settings profile.
+
+## Improvement and postgame analysis
+
+Open **Analysis** for a balanced review of survival, combat, farming and hero results. Choose one game mode; current hero/time filters also apply. Recent and previous windows contain equal, non-overlapping sets of up to 20 scored games. Deaths per 10 minutes, kills plus assists per 10 minutes, and last hits per minute divide recorded totals by their eligible match durations. Missing fields are excluded with sample counts shown. A rolling chart uses up to ten scored matches per point. These are comparisons with your own history; patch changes, opponents, hero choices and roles can affect them.
+
+The suggested review focus selects the largest adverse relative change of at least 10% among those three rates, requiring five measured games in each window. It is a prompt to inspect decisions, not proof of a cause or a skill grade. Hero evidence shows game counts and 95% Wilson intervals alongside win rate so small samples do not appear conclusive.
+
+Save one measurable goal for the next ten new scored matches. Its baseline uses up to 20 recent scored matches of the selected mode/hero, with at least five measured games required. Progress uses only matches played after saving the goal and after its newest known match ID; importing old games cannot count as progress. The saved scope remains fixed when browsing other filters. At least five eligible measurements are needed before assessing progress.
+
+**Postgame review** is available on Dashboard, Analysis and Match History. Choose a match and load its detailed review on demand. The app requests already indexed metadata with `disable_steam=true`; it does not request a new replay from Steam. Some matches have no detailed metadata. Available reviews include kill participation, team wealth/damage shares, death timestamps and recorded time dead, sampled net-worth/damage charts, resource counters, and item purchase/upgrade/sale events. Team shares require a complete supported-mode roster and complete relevant fields. Damage/healing/income summaries require a snapshot within 30 seconds of match end and may omit the final seconds. Recorded income counters may not cover all sources of earned souls. Item names come from the current catalog; events are not a reconstructed final inventory or a historical build recommendation.
+
+Use the review prompts to inspect what you knew before deaths, how you arrived at fights and which resource routes you missed. Save a short note to the local **Postgame journal** and return to it later. Notes and goals are separate for each account and persist across launches; up to 500 notes of 1,500 characters each are supported. The app cannot determine from summary statistics whether a specific death was avoidable.
 
 ## Hero analytics and match history
 
@@ -128,7 +148,7 @@ Match state is deliberately temporary: reopening starts at `00:00` with no clear
 npm run dist:win
 ```
 
-The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.3.3.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
+The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.4.0.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
 
 For a portable Windows folder instead of an installer:
 
@@ -155,9 +175,9 @@ npm run test:desktop
 For the optional live API check in the headless cloud, use `NODE_USE_ENV_PROXY=1 COMPANION_TEST_LIVE_API=1 npm run test:desktop:cloud`. It requires public API network access and leaves the default test suite independent of service availability.
 
 - Unit tests cover event/warning boundaries, elapsed time, pause/resume/stop/reset, forward/backward sync, notification deduplication, delayed ticks, distinct conditional camp locations, rule edits, and configuration validation.
-- API unit tests cover Steam IDs/profile links, missing metrics, scored outcomes, account identity validation, transport deduplication, cache expiry, refresh/rebuild cooldowns, persisted provider provenance, stored-history rate-limit responses, and offline fallback. Analytics tests cover local-date grouping, missing metrics, badge availability and history ordering.
-- Browser tests exercise navigation, audio generation, event delivery, manual sync, persistence, player lookup, filters, expandable results, offline-cache labels, account switching, saved filters, hero charts, paginated/searchable history, rebuild requests and responsive layout. Player API responses are intercepted fixtures; this does not validate the live service.
-- The Electron test launches the **production build**, checks preload isolation, delivers an alert and starts its tone oscillators while the native window is minimised, verifies the settings file, and relaunches to confirm persistence. It also exercises API IPC with fixture responses, persists account/cache data, rejects unsupported resource requests, and verifies cached results after relaunch. A second native test runs real local OCR on generated clock pixels with a simulated OS crop source, checks calibration, minimised reminder audio, missing readings, manual override and resumption. These use isolated temporary profiles; live game recognition and FPS remain unverified.
+- API unit tests cover Steam IDs/profile links, missing metrics, scored outcomes, account identity validation, transport deduplication, cache expiry, refresh/rebuild cooldowns, persisted provider provenance, stored-history rate-limit responses, safe name-query encoding and cache filenames, durable history merging, account-checked archive import, metadata identity, and offline fallback. Coaching tests cover duration-weighted metrics, disjoint comparison windows, sample intervals and incomplete team/terminal data. Analytics tests cover local-date grouping, missing metrics, badge availability and history ordering.
+- Browser tests exercise navigation, audio generation, event delivery, manual sync, persistence, player lookup, filters, expandable results, offline-cache labels, account switching, saved filters, hero charts, paginated/searchable history, rebuild requests, duplicate-name suggestions and stale-search responses, goals and journal persistence, detailed review, archive import/export, career estimates and responsive layout. Player API responses are intercepted fixtures; this does not validate the live service.
+- The Electron test launches the **production build**, checks preload isolation, delivers an alert and starts its tone oscillators while the native window is minimised, verifies the settings file, and relaunches to confirm persistence. It also exercises API IPC with fixture responses, persists account/cache data, rejects unsupported resource requests, and verifies cached results, imported history and journal notes after relaunch. A second native test runs real local OCR on generated clock pixels with a simulated OS crop source, checks calibration, minimised reminder audio, missing readings, manual override and resumption. These use isolated temporary profiles; live game recognition and FPS remain unverified.
 
 For this headless Debian cloud image:
 
@@ -178,9 +198,11 @@ Tests verify scheduling and sound generation, not human audibility through a phy
 - `electron/preload.cts`: narrow typed bridge; no general IPC or filesystem access is exposed.
 - `src/core/timer.ts`: deterministic clock and event engine, independent of React/Electron.
 - `src/core/schema.ts`: settings, rule, and command validation.
-- `src/core/api.ts`: public API schemas, fixed-host transport, cache policy, account parsing, and statistics.
+- `src/core/api.ts`: public API schemas, fixed-host transport, cache policy, account parsing, durable history archives, and statistics.
+- `src/core/coaching.ts`: duration-weighted personal trends, comparison windows, win intervals and detailed review calculations.
 - `src/core/settings.ts`: conservative preset migration and explicit default restoration.
-- `src/components/PlayerDashboard.tsx`: lookup, statistics, saved filters, coverage information, and refresh controls.
+- `src/components/PlayerDashboard.tsx`, `PlayerSearch.tsx`, `HistoryCoverage.tsx`: lookup suggestions, saved filters, coverage, refresh and archive controls.
+- `src/components/ImprovementCenter.tsx`, `PostgameReview.tsx`: balanced analysis, saved goals, detailed match review and the local journal.
 - `src/components/AnalyticsViews.tsx`, `src/core/analytics.ts`: hero analytics, performance/rank charts, local-day aggregation and the match-history explorer.
 - `src/core/audio.ts`: local tone synthesis and optional speech.
 - `src/core/bridge.ts`: browser-only development adapter.

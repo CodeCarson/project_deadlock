@@ -4,7 +4,6 @@ import {
   CircleHelp,
   Crosshair,
   RefreshCw,
-  Search,
   Shield,
   Swords,
   Trophy,
@@ -17,7 +16,6 @@ import {
   heroSummaries,
   matchSchema,
   outcome,
-  parseAccount,
   profileSchema,
   rankSchema,
   safeImage,
@@ -35,6 +33,14 @@ import {
   MatchHistory,
   PerformanceCharts,
 } from "./AnalyticsViews";
+import { PlayerSearch } from "./PlayerSearch";
+import {
+  ImprovementCenter,
+  emptyResearch,
+  type Research,
+} from "./ImprovementCenter";
+import { PostgameReview } from "./PostgameReview";
+import { HistoryCoverage } from "./HistoryCoverage";
 import { formatClock } from "../core/timer";
 
 interface PlayerData {
@@ -59,8 +65,12 @@ export function PlayerDashboard({
   view = "Dashboard",
   savedFilters = { hero: "all", mode: "all", days: "all" },
   onFiltersChange,
+  research = emptyResearch,
+  onResearchChange,
 }: {
-  view?: "Dashboard" | "Heroes" | "Match History";
+  view?: "Dashboard" | "Heroes" | "Match History" | "Analysis";
+  research?: Research;
+  onResearchChange?: (research: Research) => Promise<void>;
   savedFilters?: Settings["playerFilters"];
   onFiltersChange?: (filters: Settings["playerFilters"]) => void;
   accountId: string;
@@ -185,16 +195,15 @@ export function PlayerDashboard({
       h?.images?.icon_image_small_webp ?? h?.images?.icon_image_small,
     );
   };
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const id = parseAccount(input);
-      setError("");
-      if (String(id) === accountId) await load(id, true);
-      else await onAccountChange(String(id));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Player lookup failed.");
-    }
+  const selectPlayer = async (id: number) => {
+    setError("");
+    setInput(String(id));
+    if (String(id) === accountId) await load(id, true);
+    else await onAccountChange(String(id));
+  };
+  const saveResearch = async (value: Research) => {
+    if (!onResearchChange) throw new Error("Research saving is unavailable.");
+    await onResearchChange(value);
   };
   const badgeMatch = data?.history.find(
     (m) => (m.ranked_display_badge ?? 0) > 0,
@@ -210,35 +219,13 @@ export function PlayerDashboard({
   const image = safeImage(data?.profile?.avatarfull);
   return (
     <div className="player-dashboard">
-      <section className="panel player-lookup">
-        <form onSubmit={submit}>
-          <label htmlFor="player-id">
-            <Search size={17} />
-            Find your player profile
-          </label>
-          <div className="lookup-input">
-            <input
-              id="player-id"
-              value={input}
-              placeholder="Steam account ID or a numeric profile link"
-              onChange={(e) => setInput(e.target.value)}
-              autoComplete="off"
-              maxLength={250}
-            />
-            <button
-              className="button primary"
-              disabled={loading || !input.trim()}
-            >
-              <Search size={16} />
-              {loading ? "Loading…" : "Load player"}
-            </button>
-          </div>
-          <small>
-            Supports account IDs, SteamID64, Steam [U:1:…], Steam /profiles/ and
-            numeric Deadlock profile links. No login or API key needed.
-          </small>
-        </form>
-      </section>
+      <PlayerSearch
+        input={input}
+        setInput={setInput}
+        loading={loading}
+        onSelect={selectPlayer}
+        onError={setError}
+      />
       {error && (
         <div className="banner error-banner" role="alert">
           <CircleHelp size={17} />
@@ -372,6 +359,16 @@ export function PlayerDashboard({
               Rebuild full history
             </button>
           </section>
+          <HistoryCoverage
+            key={`coverage-${data.accountId}`}
+            accountId={data.accountId}
+            matches={data.history}
+            result={data.historyResult}
+            research={research}
+            onSave={saveResearch}
+            loading={loading}
+            onReload={() => load(data.accountId)}
+          />
           {data.warnings.length > 0 && (
             <div className="banner info-banner">
               <CircleHelp size={16} />
@@ -483,14 +480,45 @@ export function PlayerDashboard({
             filters, which may not include your full career. KDA = (kills +
             assists) / max(1, deaths).
           </p>
-          {view !== "Match History" && (
+          {(view === "Dashboard" || view === "Heroes") && (
             <PerformanceCharts matches={filtered} ranks={data.ranks} />
+          )}
+          {(view === "Dashboard" || view === "Analysis") && (
+            <ImprovementCenter
+              key={`improve-${data.accountId}`}
+              matches={filtered}
+              allMatches={data.history}
+              heroes={data.heroes}
+              heroFilter={hero}
+              research={research}
+              onSave={saveResearch}
+            />
+          )}
+          {view === "Analysis" && (
+            <PostgameReview
+              key={`review-${data.accountId}`}
+              accountId={data.accountId}
+              matches={filtered}
+              heroes={data.heroes}
+              research={research}
+              onSave={saveResearch}
+            />
           )}
           {view === "Heroes" && (
             <HeroAnalytics matches={filtered} heroes={data.heroes} />
           )}
           {view === "Match History" && (
             <MatchHistory matches={filtered} heroes={data.heroes} />
+          )}
+          {(view === "Dashboard" || view === "Match History") && (
+            <PostgameReview
+              key={`review-${data.accountId}`}
+              accountId={data.accountId}
+              matches={filtered}
+              heroes={data.heroes}
+              research={research}
+              onSave={saveResearch}
+            />
           )}
           {view === "Dashboard" &&
             (!filtered.length ? (

@@ -2321,3 +2321,204 @@ main {
   image-rendering: auto;
   border: 1px solid #444;
 }
+.profile-suggestions {
+  margin: 12px 0;
+}
+.profile-suggestions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.profile-suggestions button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #20212b;
+  border: 1px solid #34323f;
+  color: #e7e7ec;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.profile-suggestions button:hover,
+.profile-suggestions button.active {
+  border-color: #b69ddf;
+  background: #2e283c;
+}
+.profile-suggestions img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+.profile-suggestions span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.profile-suggestions small {
+  color: #9594a7;
+}
+.improvement-center,
+.postgame-review,
+.history-coverage {
+  padding: 24px;
+}
+.improvement-center p,
+.postgame-review p,
+.history-coverage p {
+  line-height: 1.6;
+  color: #aeacbd;
+}
+.improvement-center h3,
+.postgame-review h3,
+.history-coverage h3 {
+  margin-top: 24px;
+}
+.coaching-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.coaching-card {
+  border: 1px solid #34323f;
+  border-radius: 10px;
+  padding: 16px;
+  background: #191a22;
+}
+.coaching-card > strong {
+  display: block;
+  font-size: 30px;
+  margin: 10px 0;
+}
+.coaching-card small {
+  color: #a5a1b5;
+  display: block;
+  line-height: 1.5;
+}
+.coaching-card p {
+  font-size: 13px;
+}
+.coaching-card p.positive {
+  color: #9dc7aa;
+}
+.goal-panel {
+  background: #211e2b;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #44374e;
+  margin-top: 20px;
+}
+.review-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.review-metrics article {
+  background: #191a22;
+  padding: 14px;
+  border: 1px solid #34323f;
+  border-radius: 8px;
+}
+.review-metrics small,
+.review-metrics strong {
+  display: block;
+}
+.review-metrics strong {
+  margin-top: 8px;
+  font-size: 22px;
+}
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.death-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.death-events span {
+  background: #2e232b;
+  color: #e7b1b7;
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 13px;
+}
+.review-note label {
+  display: grid;
+  gap: 8px;
+}
+.review-note textarea {
+  width: 100%;
+  resize: vertical;
+  background: #191a22;
+  border: 1px solid #34323f;
+  border-radius: 8px;
+  color: #eee;
+  padding: 12px;
+  font: inherit;
+  margin-bottom: 12px;
+}
+.review-note small {
+  display: block;
+  margin-top: 10px;
+  color: #9594a7;
+}
+.history-coverage summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.history-coverage li,
+.postgame-review li {
+  color: #aeacbd;
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+.postgame-review select {
+  max-width: 100%;
+}
+@media (max-width: 1200px) {
+  .coaching-grid,
+  .review-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .coaching-grid,
+  .review-metrics,
+  .review-grid,
+  .profile-suggestions ul {
+    grid-template-columns: 1fr;
+  }
+  .improvement-center .section-heading {
+    flex-wrap: wrap;
+  }
+  .improvement-center,
+  .postgame-review,
+  .history-coverage {
+    padding: 16px;
+  }
+}
+
+.saved-journal {
+  margin-top: 20px;
+}
+.saved-journal article {
+  padding: 12px 0;
+  border-bottom: 1px solid #34323f;
+}
+.review-focus {
+  background: #292235;
+  border-left: 3px solid #b69ddf;
+  padding: 14px 18px;
+  border-radius: 6px;
+  margin: 18px 0;
+}

@@ -45,13 +45,16 @@ test("production app, native persistence, minimized scheduling and audio generat
         "profile",
         "heroes",
         "ranks",
+        "items",
       ] as const) {
         const result = await page.evaluate(
           ({ resource }) =>
             window.companion!.request({
               resource,
               accountId:
-                resource === "heroes" || resource === "ranks"
+                resource === "heroes" ||
+                resource === "ranks" ||
+                resource === "items"
                   ? undefined
                   : 1896902807,
             }),
@@ -61,6 +64,21 @@ test("production app, native persistence, minimized scheduling and audio generat
         expect((result.data as unknown[]).length).toBeGreaterThan(0);
         expect(result.cached).toBe(false);
       }
+    }
+    if (process.env.COMPANION_TEST_LIVE_API === "1") {
+      const result = await page.evaluate(() =>
+        window.companion!.request({ resource: "search", query: "Carson" }),
+      );
+      expect((result.data as any[]).length).toBeGreaterThan(0);
+      const metadata = await page.evaluate(() =>
+        window.companion!.request({ resource: "metadata", matchId: 112140499 }),
+      );
+      expect((metadata.data as any).match_info.match_id).toBe(112140499);
+      expect(
+        (metadata.data as any).match_info.players.some(
+          (p: any) => p.account_id === 60392473,
+        ),
+      ).toBe(true);
     }
     await page.getByRole("button", { name: "Test sound", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Test sound played");
@@ -145,6 +163,29 @@ test("production app, native persistence, minimized scheduling and audio generat
       page.getByRole("heading", { name: "Native API test", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("API RESPONSE", { exact: true })).toBeVisible();
+    await page
+      .getByLabel("Match review note")
+      .fill("Native journal persistence check");
+    await page
+      .getByRole("button", { name: "Save review note", exact: true })
+      .click();
+    await expect(page.getByRole("status")).toHaveText("Settings saved");
+    await page.evaluate(() =>
+      window.companion!.importHistory(1234, {
+        format: "deadlock-companion-history",
+        version: 1,
+        accountId: 1234,
+        matches: [
+          {
+            match_id: 122,
+            account_id: 1234,
+            hero_id: 1,
+            start_time: 99,
+            player_match_outcome: 1,
+          },
+        ],
+      }),
+    );
     await page.getByRole("button", { name: "Heroes", exact: true }).click();
     await page.getByLabel("Filter by hero").selectOption("1");
     await expect(
@@ -197,6 +238,16 @@ test("production app, native persistence, minimized scheduling and audio generat
     await expect(
       reopened.getByText("CACHED DATA", { exact: true }),
     ).toBeVisible();
+    await expect(reopened.getByLabel("Match review note")).toHaveValue(
+      "Native journal persistence check",
+    );
+    expect(
+      (
+        await reopened.evaluate(() =>
+          window.companion!.request({ resource: "history", accountId: 1234 }),
+        )
+      ).data,
+    ).toHaveLength(2);
     await expect(reopened.getByLabel("Filter by hero")).toHaveValue("1");
     await reopened
       .getByRole("button", { name: "Settings", exact: true })

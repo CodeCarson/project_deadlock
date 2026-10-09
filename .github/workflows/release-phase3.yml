@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.3.3-phase3
+        default: v0.4.0-phase3
         type: string
 
 permissions:
@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.3.3-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.4.0-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.3.3-phase3' }}
+          ref: ${{ inputs.tag || 'v0.4.0-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -78,7 +78,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.3.3-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.4.0-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -89,23 +89,25 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
           "$hash  $zipName" | Set-Content -Encoding utf8NoBOM release/SHA256SUMS.txt
           @'
-          Phase 3 Windows x64 prerelease. Extract the entire ZIP and launch Deadlock Companion.exe. Keep the extracted files together. Existing settings, player selection and personal reminders use the same profile directory.
+          Windows x64 stats and improvement update. Extract the entire ZIP and launch Deadlock Companion.exe. Keep the extracted files together. Existing settings, player selection, reminders and clock configuration use the same local profile.
 
-          Adds dedicated hero analytics, daily win-rate and KDA charts, reported rank trends where available, searchable match history with 25-match pages and expandable details, and persisted hero/mode/time filters. Missing fields remain unavailable; final net worth per minute is not claimed as total earned souls per minute.
+          Search by Steam display name with debounced indexed suggestions, avatar/account-ID disambiguation and keyboard selection. Numeric IDs and profile links remain supported. Names are not automatically matched to the first result.
 
-          Separates normal Refresh from the hourly full-history rebuild. Shows available match count, newest match date, fetch timestamp and whether the provider reported calling Steam. The provider can return incomplete indexed history; a full rebuild requires provider Steam-bot access and does not guarantee complete career totals.
+          Analysis balances survival, combat, farming and hero results. Compare equal scored-game windows within one mode, explore duration-weighted rolling rates and sample-aware hero win rates, and save one goal for your next ten new scored games. Review prompts describe observed changes without claiming their cause.
 
-          Replaces Overwolf with an EXPERIMENTAL standalone Windows cropped-clock reader. No Overwolf installation or developer approval required. In Settings, select the display, adjust the tiny clock rectangle, Test clock crop, Save clock area, then enable automatic tracking. Bring Deadlock to the foreground. Local bundled OCR reads about once per second; images stay in memory with no recording or uploads. Only the configured rectangle is captured. Version 0.3.3 adds enlargement, contrast normalisation and fallback preprocessing for small HUD text; the preview shows the processed image. A valid crop can now be saved and the reader enabled even if OCR fails, while reminders still wait for reliable readings. Missing, stale or unreadable samples pause reminders. Manual controls remain available. Practice/spectator clocks cannot be distinguished; match-end detection is inferred from the clock disappearing. See README.md for calibration and transition limitations. Live game recognition and FPS/frame-time impact remain unverified; zero performance impact is not promised.
+          Load detailed postgame metadata on demand: kill participation, complete-team wealth/damage shares, recorded death timing, sampled resource/combat charts, recorded income counters and item events. Missing or incomplete fields stay unavailable. Income counters may not represent all earned souls. Current item names do not reconstruct a historical final build. Save per-match notes in a persistent local journal.
 
-          Keeps the editable enabled October 6 timing presets. Customised rules are preserved. Restore defaults resets built-ins while keeping personal reminders and audio preferences.
+          History refreshes retain older collected matches. A coverage panel separates provider records from retained records, accepts your own estimated career total, and exports/imports validated same-account JSON history archives. Goals and journal notes remain in local settings, separate from history exports. The API has no pagination for older matches. Its indexed history can be incomplete; full-history rebuilds require provider Steam-bot access and do not guarantee a complete career total. Consult deadlock-api.com for current access instructions.
 
-          Unit, browser and native Electron checks cover analytics, history, persistence, API handling and minimised reminder audio. Native OCR tests use generated clock images and a simulated OS crop source, not a running game. The Windows runner additionally tests the real tiny-screen-crop adapter, runs unit tests and builds this ZIP with local OCR resources. Use Test sound on your PC to check your audio output. Independent community project; not affiliated with Valve.
+          Preserves the experimental standalone Windows cropped-clock reader from 0.3.3 and the editable enabled October 6 timing presets. Live game OCR reliability and FPS impact remain unverified. Manual timer controls remain available.
+
+          Unit, browser and native Electron checks cover search, analytics, detailed review, archive import, persistence, API handling and minimised audio. The live desktop check verifies public search/history/metadata/items/profile endpoints. The Windows runner also tests the native tiny-screen-crop adapter and builds the ZIP with bundled local OCR resources. Independent community project; not affiliated with Valve.
           '@ | Set-Content -Encoding utf8NoBOM release/notes.md
           $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
           if ($LASTEXITCODE -eq 0) {
             if (!(($existing | ConvertFrom-Json).isPrerelease)) { throw 'The existing release is not a prerelease.' }
             gh release upload $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
           } else {
-            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Phase 3' --notes-file release/notes.md
+            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Stats & improvement' --notes-file release/notes.md
           }
           if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed.' }

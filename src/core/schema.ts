@@ -64,6 +64,41 @@ export const settingsSchema = z
         "Invalid Steam account ID.",
       )
       .default(""),
+    playerResearch: z
+      .record(
+        z.string().regex(/^[1-9][0-9]{0,9}$/),
+        z.object({
+          expectedTotal: z
+            .number()
+            .int()
+            .min(1)
+            .max(100000)
+            .nullable()
+            .default(null),
+          notes: z
+            .array(
+              z.object({
+                matchId: z.number().int().positive().safe(),
+                text: z.string().max(1500),
+              }),
+            )
+            .max(500)
+            .default([]),
+          goal: z
+            .object({
+              metric: z.enum(["deaths", "combat", "farm"]),
+              target: z.number().finite().nonnegative().max(10000),
+              baseline: z.number().finite().nonnegative(),
+              anchor: z.number().int().positive().safe(),
+              hero: z.string(),
+              mode: z.number().int(),
+              createdAt: z.number().nonnegative(),
+            })
+            .nullable()
+            .default(null),
+        }),
+      )
+      .default({}),
     playerFilters: z
       .object({
         hero: z.string(),
@@ -158,6 +193,7 @@ export interface Bridge {
   }>;
   resumeAutomaticTracking(): Promise<void>;
   request(request: ApiRequest): Promise<ApiResult>;
+  importHistory(accountId: number, archive: unknown): Promise<ApiResult>;
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
   getTimer(): Promise<TimerSnapshot>;

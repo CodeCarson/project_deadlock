@@ -111,6 +111,10 @@ else {
         trusted(event);
         return api.request(raw);
       });
+      ipcMain.handle("api:importHistory", (event, accountId, archive) => {
+        trusted(event);
+        return api.importHistory(accountId, archive);
+      });
       engine = new TimerEngine(settings);
       detection = new ClockReader(engine);
       const capture = new ClockCapture(
