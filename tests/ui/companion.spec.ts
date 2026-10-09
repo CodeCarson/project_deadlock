@@ -126,7 +126,18 @@ test("current defaults are enabled and editable; Rift shows a window and a manua
   await rift
     .getByRole("button", { name: "Mark appeared", exact: true })
     .click();
-  await expect(rift.getByText("16:30–18:30", { exact: true })).toBeVisible();
+  // The running clock may advance between Sync and the user clicking Mark appeared.
+  const appeared = await rift.getByText(/^Appeared at /).innerText();
+  const match = /Appeared at\s+(\d+):(\d{2})/.exec(appeared);
+  expect(match).not.toBeNull();
+  const minutes = Number(match![1]),
+    seconds = Number(match![2]);
+  const at = minutes * 60 + seconds;
+  const clock = (value: number) =>
+    `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+  await expect(
+    rift.getByText(`${clock(at + 360)}–${clock(at + 480)}`, { exact: true }),
+  ).toBeVisible();
   await page.reload();
   await small.getByRole("button", { name: "Edit rule", exact: true }).click();
   await expect(page.getByLabel("Respawn delay (MM:SS)")).toHaveValue("01:30");

@@ -150,9 +150,12 @@ export interface Bridge {
       height: number;
     }[]
   >;
-  previewClock(
-    region: CaptureRegion,
-  ): Promise<{ image: string; text: string; confidence: number }>;
+  previewClock(region: CaptureRegion): Promise<{
+    image: string;
+    text: string;
+    confidence: number;
+    processedImage?: string;
+  }>;
   resumeAutomaticTracking(): Promise<void>;
   request(request: ApiRequest): Promise<ApiResult>;
   loadSettings(): Promise<Settings>;

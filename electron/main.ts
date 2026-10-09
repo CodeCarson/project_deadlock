@@ -247,7 +247,7 @@ else {
             const frame = await capture.frame(region, true);
             if (!frame.image)
               throw new Error("Could not capture the selected clock area.");
-            const result = await capture.recognise(frame.image);
+            const result = await capture.recognise(frame.image, true);
             return { image: `data:image/png;base64,${frame.image}`, ...result };
           } finally {
             if (!settings.automaticTracking) await capture.close();

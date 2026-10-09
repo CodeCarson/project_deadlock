@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-For a portable Windows download, use [the Phase 3 release](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.3.2-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
+For a portable Windows download, use [the Phase 3 release](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.3.3-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
 
 `npm ci` installs the locked dependencies and downloads the matching official Electron binary with checksum verification. The first installation needs Internet access to npm and GitHub release assets. Match reminders work offline. Player lookup requires Internet access; previously cached player data remains viewable during outages.
 
@@ -100,21 +100,21 @@ Defaults are in [`config/timing-rules.json`](config/timing-rules.json). Times in
 
 ## Automatic match tracking — experimental local clock reader
 
-Version 0.3.2 replaces the Overwolf helper with a standalone Windows clock reader. No Overwolf installation or developer approval is required. It reads only a small rectangle that you configure, using Windows screen capture and bundled local OCR. Images stay in memory; no recording, image files or uploads occur. Automatic tracking is off until you configure and enable it.
+Version 0.3.3 replaces the Overwolf helper with a standalone Windows clock reader. No Overwolf installation or developer approval is required. It reads only a small rectangle that you configure, using Windows screen capture and bundled local OCR. Images stay in memory; no recording, image files or uploads occur. Automatic tracking is off until you configure and enable it.
 
 1. Open Deadlock with the clock visible, preferably in borderless windowed mode. Keep the same game resolution and display scaling during setup and play.
 2. In **Settings → Automatic match tracking**, choose the game display and adjust the rectangle's physical-pixel X/Y/width/height to tightly surround the clock. **Test clock crop** shows only that rectangle. Exclude scores and other numbers; the maximum crop is 640 × 160 pixels.
-3. Once the preview reads the correct clock with adequate confidence, choose **Save clock area**, then enable automatic tracking. Bring Deadlock to the foreground. Two consistent readings begin tracking at the visible time, including when joining mid-match.
+3. Choose **Save clock area**, then enable automatic tracking. Saving is allowed even when OCR fails; enabling starts the reader, and reminders wait for reliable clock readings. Bring Deadlock to the foreground. Two consistent readings begin tracking at the visible time, including when joining mid-match.
 4. Compare the companion clock with the game and test a short personal reminder, pause/unpause and alt-tab. Unreadable or missing readings pause automatic reminders. Return to the game to resume. Capture may be unavailable in exclusive fullscreen; try borderless mode or use manual controls.
 5. Compare FPS/frame times in the same scene with tracking off and on. Disable it if performance suffers. Small crops and roughly one sample per second limit work, but zero performance impact is not guaranteed.
 
-The long-lived Windows capture helper checks the foreground process name (`deadlock` or `citadel`) and window bounds before reading the configured rectangle. Only window/process metadata is inspected; no game memory, files, injection or overlay is used. OCR runs in a worker with locally bundled models, requiring no model download during play. Disabling tracking releases the capture process and OCR worker. The explicit calibration preview can capture the selected rectangle outside the game, so check its coordinates before testing.
+The long-lived Windows capture helper checks the foreground process name (`deadlock` or `citadel`) and window bounds before reading the configured rectangle. Only window/process metadata is inspected; no game memory, files, injection or overlay is used. OCR runs in a worker with locally bundled models, requiring no model download during play. Version 0.3.3 enlarges the crop, normalises contrast, converts it to grayscale with a white border and retries thresholded/original pixels when needed. Test clock crop shows both the original crop and the image used for recognition. Tight framing still matters: exclude scores and other numbers. Confidence and temporal consistency requirements remain unchanged. Disabling tracking releases the capture process and OCR worker. The explicit calibration preview can capture the selected rectangle outside the game, so check its coordinates before testing.
 
 The clock advances only on accepted samples, with no extrapolation. Low-confidence, implausible or stale readings pause it. A frozen readable clock pauses after about three seconds; it cannot run ahead while frozen. Audio can arrive slightly after an event due to sampling. Initial confirmation and resumption skip events already passed instead of replaying old alerts.
 
 This reads a visible clock rather than authoritative match events. Practice and spectator clocks cannot be distinguished from a normal match. A new clock near zero after at least 15 seconds without the prior clock resets notification history; other transitions may need **Reset** or manual **Sync**. Match end is inferred from the clock disappearing, not an explicit end event. Manual Start/Pause/Stop/Reset/Sync takes control until **Resume automatic tracking**. Mark cleared/Undo remains available during automatic tracking. Changing resolution, display position or scaling requires recalibration.
 
-Local OCR and scheduling are tested with generated clock images. The Windows release runner tests the actual cropped-screen adapter. Recognition of your live Deadlock HUD, exclusive-fullscreen compatibility and FPS/frame-time impact still require testing on your PC.
+Local OCR and scheduling are tested with generated clock images, including 14–24 pixel text, low-contrast and coloured text, serif/sans-serif/monospace fonts and light/dark backgrounds. The save/enable regression test covers an unreadable crop without starting reminders. The Windows release runner tests the actual cropped-screen adapter. Recognition of your live Deadlock HUD, exclusive-fullscreen compatibility and FPS/frame-time impact still require testing on your PC.
 
 ## Persistence
 
@@ -128,7 +128,7 @@ Match state is deliberately temporary: reopening starts at `00:00` with no clear
 npm run dist:win
 ```
 
-The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.3.2.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
+The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.3.3.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
 
 For a portable Windows folder instead of an installer:
 

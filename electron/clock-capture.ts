@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 import { createWorker, OEM, PSM, type Worker } from "tesseract.js";
+import { clockImages } from "./clock-image.js";
+import { recognisedClock } from "../src/core/clock-reader.js";
 import type { CaptureRegion } from "../src/core/schema.js";
 const require = createRequire(import.meta.url);
 export class ClockCapture {
@@ -147,30 +149,42 @@ export class ClockCapture {
       user_defined_dpi: "150",
     });
   }
-  async recognise(image: string) {
+  async recognise(image: string, preview = false) {
     await this.initialise();
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    let result;
-    try {
-      result = await Promise.race([
-        this.worker!.recognize(Buffer.from(image, "base64")),
-        new Promise<never>((_resolve, reject) => {
-          timeout = setTimeout(
-            () => reject(new Error("Local clock recognition timed out.")),
-            10000,
-          );
-        }),
-      ]);
-    } catch (error) {
-      await this.close();
-      throw error;
-    } finally {
-      if (timeout) clearTimeout(timeout);
+    let best:
+      { text: string; confidence: number; processedImage?: string } | undefined;
+    for (const input of clockImages(Buffer.from(image, "base64"))) {
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const result = await Promise.race([
+          this.worker!.recognize(input),
+          new Promise<never>((_resolve, reject) => {
+            timeout = setTimeout(
+              () => reject(new Error("Local clock recognition timed out.")),
+              3000,
+            );
+          }),
+        ]);
+        const reading = {
+          text: result.data.text.trim(),
+          confidence: result.data.confidence,
+          ...(preview
+            ? {
+                processedImage: `data:image/png;base64,${input.toString("base64")}`,
+              }
+            : {}),
+        };
+        if (!best || reading.confidence > best.confidence) best = reading;
+        if (recognisedClock(reading.text, reading.confidence) !== null)
+          return reading;
+      } catch (error) {
+        await this.close();
+        throw error;
+      } finally {
+        if (timeout) clearTimeout(timeout);
+      }
     }
-    return {
-      text: result.data.text.trim(),
-      confidence: result.data.confidence,
-    };
+    return best!;
   }
   async close() {
     this.child?.kill();

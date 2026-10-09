@@ -29,6 +29,7 @@ export function ClockCaptureSettings({
   );
   const [preview, setPreview] = useState<{
     image: string;
+    processedImage?: string;
     text: string;
     confidence: number;
     region: string;
@@ -128,7 +129,7 @@ export function ClockCaptureSettings({
         </button>
         <button
           className="button secondary small"
-          disabled={!isDesktop || busy || testing || !verified}
+          disabled={!isDesktop || busy || testing || !valid}
           onClick={() =>
             void onSave(region, false).catch((error) =>
               onError(errorMessage(error)),
@@ -140,15 +141,26 @@ export function ClockCaptureSettings({
       </div>
       {preview && (
         <div className="clock-crop-preview">
+          <p>Captured clock area</p>
           <img src={preview.image} alt="Selected clock crop" />
+          {preview.processedImage && (
+            <>
+              <p>Image used for recognition</p>
+              <img src={preview.processedImage} alt="Processed clock crop" />
+            </>
+          )}
           <p>
             Read: {preview.text || "No text"} · confidence{" "}
             {Math.round(preview.confidence)}%
-            {!verified &&
-              " — adjust the crop until a valid MM:SS clock is recognised"}
+            {!verified && " — not reliable yet; adjust the crop and test again"}
           </p>
         </div>
       )}
+      <p>
+        You can save the clock area even if recognition fails. Enabling starts
+        the reader; reminders wait for reliable readings. Keep the crop tight
+        around MM:SS, with a little space around the digits.
+      </p>
       <label className="checkbox-row">
         <input
           type="checkbox"

@@ -243,8 +243,84 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
         context.fillText(text, 16, 54);
         return canvas.toDataURL("image/png").split(",")[1];
       };
-      return [image("00:00"), image("00:03"), image("00:10")];
+      return [image("00:00"), image("00:03"), image("00:10"), image("menu")];
     });
+    const fixtures = await page.evaluate(() => {
+      const specs = [
+        {
+          text: "09:08",
+          font: "14px sans-serif",
+          background: "#191e23",
+          ink: "#e5dbba",
+        },
+        {
+          text: "10:59",
+          font: "18px sans-serif",
+          background: "#353a40",
+          ink: "#999c9f",
+        },
+        {
+          text: "00:03",
+          font: "bold 20px serif",
+          background: "#202020",
+          ink: "#dadada",
+        },
+        {
+          text: "01:10",
+          font: "18px monospace",
+          background: "#e0e0e0",
+          ink: "#303030",
+        },
+        {
+          text: "02:05",
+          font: "24px sans-serif",
+          background: "#1a2935",
+          ink: "#c5b58d",
+        },
+      ];
+      return specs.map((spec) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 120;
+        canvas.height = 40;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = spec.background;
+        ctx.fillRect(0, 0, 120, 40);
+        ctx.fillStyle = spec.ink;
+        ctx.font = spec.font;
+        ctx.fillText(spec.text, 16, 28);
+        return {
+          expected: spec.text,
+          image: canvas.toDataURL("image/png").split(",")[1],
+        };
+      });
+    });
+    const recognised = await app.evaluate(async ({ app }, fixtures) => {
+      const loader = process
+        .getBuiltinModule("module")
+        .createRequire(app.getAppPath() + "/package.json");
+      const { ClockCapture } = loader(
+        app.getAppPath() + "/dist-electron/electron/clock-capture.js",
+      );
+      const capture = new ClockCapture(app.getAppPath());
+      try {
+        const results = [];
+        for (const fixture of fixtures)
+          results.push({
+            expected: fixture.expected,
+            ...(await capture.recognise(fixture.image)),
+          });
+        return results;
+      } finally {
+        await capture.close();
+      }
+    }, fixtures);
+    for (const reading of recognised) {
+      expect(reading.text, JSON.stringify(reading)).toBe(reading.expected);
+      expect(
+        reading.confidence,
+        JSON.stringify(reading),
+      ).toBeGreaterThanOrEqual(80);
+    }
     // Only the OS crop source is simulated. Real bundled OCR reads these pixels.
     await app.evaluate(async ({ app }, image) => {
       const loader = process
@@ -268,7 +344,7 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
           observedAt: Date.now(),
         };
       };
-    }, images[0]);
+    }, images[3]);
     await page
       .getByRole("button", { name: "Add reminder", exact: true })
       .click();
@@ -279,6 +355,43 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
     await dialog.getByLabel("Enable audio reminders").check();
     await dialog.getByRole("button", { name: "Save rule" }).click();
     await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Test clock crop", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Save clock area", exact: true }),
+    ).toBeEnabled();
+    await expect(page.getByText(/not reliable yet/)).toBeVisible({
+      timeout: 20000,
+    });
+    await page
+      .getByRole("button", { name: "Save clock area", exact: true })
+      .click();
+    await expect(page.getByRole("status")).toHaveText("Settings saved");
+    await expect(
+      page.getByLabel("Enable automatic match tracking"),
+    ).toBeEnabled();
+    await page.getByLabel("Enable automatic match tracking").click();
+    await expect(
+      page.getByLabel("Enable automatic match tracking"),
+    ).toBeChecked();
+    await expect
+      .poll(
+        async () =>
+          (await page.evaluate(() => window.companion!.getTimer())).detection
+            ?.message,
+      )
+      .toContain("Clock unavailable");
+    expect(
+      (await page.evaluate(() => window.companion!.getTimer())).status,
+    ).not.toBe("running");
+    await page.getByLabel("Enable automatic match tracking").click();
+    await expect(
+      page.getByLabel("Enable automatic match tracking"),
+    ).not.toBeChecked();
+    await app.evaluate((_electron, image) => {
+      (globalThis as any).clockImage = image;
+    }, images[0]);
     await page
       .getByRole("button", { name: "Test clock crop", exact: true })
       .click();

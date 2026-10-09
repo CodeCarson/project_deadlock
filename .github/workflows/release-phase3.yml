@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.3.2-phase3
+        default: v0.3.3-phase3
         type: string
 
 permissions:
@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.3.2-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.3.3-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.3.2-phase3' }}
+          ref: ${{ inputs.tag || 'v0.3.3-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -78,7 +78,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.3.2-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.3.3-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -95,7 +95,7 @@ jobs:
 
           Separates normal Refresh from the hourly full-history rebuild. Shows available match count, newest match date, fetch timestamp and whether the provider reported calling Steam. The provider can return incomplete indexed history; a full rebuild requires provider Steam-bot access and does not guarantee complete career totals.
 
-          Replaces Overwolf with an EXPERIMENTAL standalone Windows cropped-clock reader. No Overwolf installation or developer approval required. In Settings, select the display, adjust the tiny clock rectangle, Test clock crop, Save clock area, then enable automatic tracking. Bring Deadlock to the foreground. Local bundled OCR reads about once per second; images stay in memory with no recording or uploads. Only the configured rectangle is captured. Missing, stale or unreadable samples pause reminders. Manual controls remain available. Practice/spectator clocks cannot be distinguished; match-end detection is inferred from the clock disappearing. See README.md for calibration and transition limitations. Live game recognition and FPS/frame-time impact remain unverified; zero performance impact is not promised.
+          Replaces Overwolf with an EXPERIMENTAL standalone Windows cropped-clock reader. No Overwolf installation or developer approval required. In Settings, select the display, adjust the tiny clock rectangle, Test clock crop, Save clock area, then enable automatic tracking. Bring Deadlock to the foreground. Local bundled OCR reads about once per second; images stay in memory with no recording or uploads. Only the configured rectangle is captured. Version 0.3.3 adds enlargement, contrast normalisation and fallback preprocessing for small HUD text; the preview shows the processed image. A valid crop can now be saved and the reader enabled even if OCR fails, while reminders still wait for reliable readings. Missing, stale or unreadable samples pause reminders. Manual controls remain available. Practice/spectator clocks cannot be distinguished; match-end detection is inferred from the clock disappearing. See README.md for calibration and transition limitations. Live game recognition and FPS/frame-time impact remain unverified; zero performance impact is not promised.
 
           Keeps the editable enabled October 6 timing presets. Customised rules are preserved. Restore defaults resets built-ins while keeping personal reminders and audio preferences.
 
