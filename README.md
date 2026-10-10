@@ -87,7 +87,7 @@ The Stats workspace keeps the detailed views in expandable sections instead of s
 ## Your first match (manual mode)
 
 1. Open **Settings** or click **Add reminder**. For a quick personal test, set an event at `00:10`, select Personal reminder, confirm it, and enable it.
-2. Choose Soft chime, Radar pulse, or Clear bell. Set the volume and press **Test sound**. Optional spoken announcements use your system's installed voices.
+2. Choose a sound, set the volume and press **Test sound**. For spoken announcements, select **Michael**, **Heart** or **Emma** under **Voice**, press **Test voice**, then enable **Speak event announcements**.
 3. Choose advance warnings at 30, 15, and/or 5 seconds. Enabled rules also notify at the event time. Warnings before match time zero are omitted.
 4. Press **Start match** when the game clock starts. To join partway through a game or correct drift, enter the actual clock as `MM:SS` and press **Sync**. Sync preserves the running/paused state.
 5. **Pause** freezes the clock. **Stop** freezes it and marks the session stopped; Resume continues from that time. **Reset** clears the clock, event log, notification history, and marked clear times for a new match.
@@ -134,7 +134,7 @@ Defaults are in [`config/timing-rules.json`](config/timing-rules.json). Times in
 - Fired warnings/events are remembered for the match, including across backwards clock corrections. Reset starts a new notification history.
 - Forward synchronisation rebases the clock without replaying events you jumped past. Backwards corrections allow upcoming unfired events while suppressing already delivered occurrences.
 - Alerts delayed by up to 5 seconds are delivered. Older alerts and advance warnings whose event is already past are consumed silently to avoid a stale notification burst after suspension.
-- Sound errors appear in the app. Muted rules/volume never imply that audio was heard. Speech depends on OS voice availability.
+- Sound errors appear in the app. Muted rules/volume never imply that audio was heard. Bundled event voices work offline; custom-text speech depends on OS voice availability.
 
 ## Automatic match tracking — experimental local clock reader
 
@@ -236,9 +236,15 @@ The renderer has no Node integration. Context isolation, renderer sandboxing, a 
 
 The experimental clock reader needs live Windows/Deadlock/FPS validation before it can be treated as dependable on your PC. Provider coverage may omit part of a player’s career; full history depends on the provider’s Steam access. Custom sound-file imports and a tray icon are also future enhancements. The Urn preset covers its first descent only; full tracking of pickups, delayed spawns and deliveries is a later timer enhancement.
 
-## Short alert voices and live recovery (0.6.1)
+## Bundled alert voices and live recovery (0.6.2)
 
-Settings offers seven local sound cues: chime, pulse, bell, knock, radio, glass and whistle. **Alert speed** (0.75–2×, default 1.35×) adjusts speech and cue length; Windows speech rate is approximate. **The Operator** prefers a lower installed voice such as Microsoft David; **The Lookout** prefers a brighter voice such as Zira. An explicit **Installed voice** choice overrides the preference. **Test voice** previews a short cue. Windows speech uses one persistent local System.Speech worker, not a fresh process per alert, cloud TTS, or an online recording. Available voices depend on Windows; if only one exists, add another under Windows language/speech settings. Browser development mode uses its speech engine and a pitch difference as fallback. New announcements cancel old unfinished speech to prevent a backlog.
+Settings offers seven local sound cues: chime, pulse, bell, knock, radio, glass and whistle. One **Voice** picker includes three bundled voices: **Michael** (American male), **Heart** (American female) and **Emma** (British female). These are distinct Kokoro voice styles, packaged as prerecorded clips. They require no Windows voice install, account, Internet connection, Python or speech model at runtime. Existing automatic Operator/Lookout preferences select Michael/Heart; explicit saved system voice selections are retained. Press **Test voice** to preview the selected voice.
+
+The packs cover the built-in camp, breakable, bridge, urn and rift reminders, including event/respawn/window cues and 5/15/30-second warnings. Other imported warning intervals say “soon”, while their exact seconds remain visible in the event log. Custom or renamed reminders use system speech so their actual text is read. Selecting a system voice uses it for every reminder. On Windows, one persistent local System.Speech worker handles those custom announcements. Speech processing and recordings are never uploaded.
+
+**Alert speed** (0.75–2×, default 1.35×) changes recording playback speed while preserving pitch and also shortens sound cues; Windows speech rate is approximate. Clips are loaded as needed, rather than keeping a neural model or the entire audio library in memory. Event announcements are serialized with a four-second stale-alert cutoff. A new preview cancels an older recording, and switching from system speech to a bundled clip cancels the previous system announcement. Physical speaker output and in-game FPS still require testing on your PC.
+
+Audio licensing, model provenance and per-clip checksums are included in `public/voices/NOTICE.txt`, `LICENSE-KOKORO.txt` and `manifest.json` and copied into the packaged app. `scripts/generate-voice-packs.py` regenerates the clips with a checksum-pinned developer-only model. Only the generated Opus audio ships.
 
 The default **Boxes & golden statues** is one editable conditional rule. Matching old boxes/statues rules are merged, preserving enable choices; deliberately different custom schedules remain intact. Other settings, notes, goals and custom reminders carry over.
 

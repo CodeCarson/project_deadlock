@@ -131,6 +131,10 @@ else {
         trusted(event);
         return voice.speak({ text, voice: voiceId, speed, volume });
       });
+      ipcMain.handle("audio:stop", (event) => {
+        trusted(event);
+        return voice.stop();
+      });
       app.on("before-quit", () => voice.close());
       engine = new TimerEngine(settings);
       detection = new ClockReader(engine);

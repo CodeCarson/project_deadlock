@@ -2,8 +2,11 @@ import type { Settings } from "./schema.js";
 import { shortAnnouncement } from "./alert-cues.js";
 export { shortAnnouncement } from "./alert-cues.js";
 import { bridge, isDesktop } from "./bridge.js";
+import { bundledCue, bundledVoice, selectedVoiceId } from "./voice-packs.js";
 let context: AudioContext | undefined;
 let nativeVoices: { id: string; name: string }[] = [];
+let nativeSpeechActive = false;
+let cancelRecording: (() => void) | undefined;
 let queue = Promise.resolve();
 export async function availableVoices() {
   if (isDesktop) nativeVoices = await bridge.alertVoices().catch(() => []);
@@ -71,9 +74,67 @@ export async function playSound(
 export async function speak(settings: Settings, message: string) {
   if (settings.volume === 0) return;
   const text = shortAnnouncement(message);
+  const voiceId = selectedVoiceId(settings.voiceId, settings.voiceStyle);
+  const pack = bundledVoice(voiceId);
+  const cue = pack ? bundledCue(message) : null;
+  cancelRecording?.();
+  window.speechSynthesis?.cancel();
+  if (pack && cue) {
+    if (nativeSpeechActive) {
+      await bridge.stopAlertSpeech();
+      nativeSpeechActive = false;
+    }
+    const url = new URL(
+      `voices/${pack.id.slice(5)}/${cue}.ogg`,
+      document.baseURI,
+    );
+    const recording = new Audio(url.href);
+    recording.volume = settings.volume;
+    recording.playbackRate = settings.alertSpeed;
+    recording.preservesPitch = true;
+    await new Promise<void>((resolve, reject) => {
+      let finished = false;
+      const finish = (error?: Error) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
+        recording.onended = recording.onerror = null;
+        recording.pause();
+        recording.removeAttribute("src");
+        recording.load();
+        if (cancelRecording === cancel) cancelRecording = undefined;
+        if (error) reject(error);
+        else resolve();
+      };
+      const cancel = () => finish();
+      cancelRecording = cancel;
+      const timeout = setTimeout(
+        () =>
+          finish(new Error("Voice playback timed out. Try Test voice again.")),
+        15000,
+      );
+      recording.onended = () => finish();
+      recording.onerror = () =>
+        finish(
+          new Error(
+            "Bundled voice could not play. Extract the whole app ZIP and try again.",
+          ),
+        );
+      void recording
+        .play()
+        .catch(() =>
+          finish(
+            new Error(
+              "Voice playback could not start. Click Test voice to enable audio.",
+            ),
+          ),
+        );
+    });
+    return;
+  }
   const choices = await availableVoices();
   const preferred =
-    choices.find((v) => v.id === settings.voiceId) ??
+    choices.find((v) => v.id === voiceId) ??
     choices.find((v) =>
       settings.voiceStyle === "operator"
         ? /david|mark|george|male/i.test(v.name) && !/female/i.test(v.name)
@@ -87,6 +148,7 @@ export async function speak(settings: Settings, message: string) {
       settings.alertSpeed,
       settings.volume,
     );
+    nativeSpeechActive = true;
     return;
   }
   if (!("speechSynthesis" in window))
@@ -94,7 +156,7 @@ export async function speak(settings: Settings, message: string) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.volume = settings.volume;
   utterance.rate = settings.alertSpeed;
-  utterance.pitch = settings.voiceStyle === "operator" ? 0.8 : 1.2;
+  utterance.pitch = 1;
   utterance.voice =
     window.speechSynthesis
       .getVoices()

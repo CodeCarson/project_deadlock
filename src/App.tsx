@@ -59,6 +59,12 @@ const PlayerDashboard = lazy(() =>
 );
 import { TeamPlanner } from "./components/TeamPlanner";
 import { restoreTimerDefaults } from "./core/settings";
+import {
+  bundledVoices,
+  bundledVoice,
+  selectedVoiceId,
+  systemVoiceId,
+} from "./core/voice-packs";
 
 type Page = "Stats" | "Team Planner" | "Live Match" | "Settings";
 const navigation: { name: Page; icon: LucideIcon; later?: boolean }[] = [
@@ -300,36 +306,36 @@ export default function App() {
         Speak event announcements
       </label>
       <div className="setting-line">
-        <label htmlFor="voice-style">Voice</label>
+        <label htmlFor="alert-voice">Voice</label>
         <select
-          id="voice-style"
-          value={settings.voiceStyle}
-          disabled={busy}
-          onChange={(e) =>
-            change({
-              voiceStyle: e.target.value as Settings["voiceStyle"],
-              voiceId: "",
-            })
-          }
-        >
-          <option value="operator">The Operator · lower voice</option>
-          <option value="lookout">The Lookout · brighter voice</option>
-        </select>
-      </div>
-      <div className="setting-line">
-        <label htmlFor="installed-voice">Installed voice</label>
-        <select
-          id="installed-voice"
-          value={settings.voiceId}
+          id="alert-voice"
+          value={selectedVoiceId(settings.voiceId, settings.voiceStyle)}
           disabled={busy}
           onChange={(e) => change({ voiceId: e.target.value })}
         >
-          <option value="">Choose automatically</option>
-          {voices.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-            </option>
-          ))}
+          <optgroup label="Bundled · offline">
+            {bundledVoices.map((voice) => (
+              <option key={voice.id} value={voice.id}>
+                {voice.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="System voices">
+            <option value={systemVoiceId}>System · choose automatically</option>
+            {voices.map((voice) => (
+              <option key={voice.id} value={voice.id}>
+                {voice.name}
+              </option>
+            ))}
+            {settings.voiceId &&
+              settings.voiceId !== systemVoiceId &&
+              !bundledVoice(settings.voiceId) &&
+              !voices.some((voice) => voice.id === settings.voiceId) && (
+                <option value={settings.voiceId}>
+                  {settings.voiceId} · unavailable
+                </option>
+              )}
+          </optgroup>
         </select>
       </div>
       <div className="setting-line">
@@ -361,9 +367,10 @@ export default function App() {
         Test voice
       </button>
       <small className="muted">
-        Uses installed Windows voices, usually David and Zira. If only one is
-        installed, add another in Windows speech settings. Speed also shortens
-        sound cues.
+        {bundledVoice(selectedVoiceId(settings.voiceId, settings.voiceStyle))
+          ? "Bundled voice packs play built-in event alerts offline. Custom or renamed reminders use system speech."
+          : "System voices read all reminders, including custom text. Available voices depend on your Windows installation."}{" "}
+        Speed shortens announcements and sound cues.
       </small>
     </>
   );

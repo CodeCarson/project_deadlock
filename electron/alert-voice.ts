@@ -111,4 +111,7 @@ export class AlertVoice {
   close() {
     this.child?.stdin.end();
   }
+  async stop() {
+    if (this.child) await this.request({ action: "stop" });
+  }
 }

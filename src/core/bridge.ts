@@ -60,6 +60,7 @@ function browserBridge(): Bridge {
       return [];
     },
     async speakAlert() {},
+    async stopAlertSpeech() {},
     async loadSettings() {
       return settings;
     },

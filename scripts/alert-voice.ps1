@@ -16,6 +16,9 @@ try {
         $speaker.SpeakAsyncCancelAll()
         $null = $speaker.SpeakAsync([string]$request.text)
         @{ id = $request.id; ok = $true } | ConvertTo-Json -Compress
+      } elseif ($request.action -eq 'stop') {
+        $speaker.SpeakAsyncCancelAll()
+        @{ id = $request.id; ok = $true } | ConvertTo-Json -Compress
       } else { throw 'Unsupported voice operation.' }
     } catch {
       @{ id = $request.id; error = $_.Exception.Message } | ConvertTo-Json -Compress

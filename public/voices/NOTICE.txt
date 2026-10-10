@@ -1,0 +1,22 @@
+Bundled Deadlock Companion alert voice packs
+
+Michael (am_michael), Heart (af_heart), Emma (bf_emma).
+These are synthesized recordings, not recordings of Valve actors or characters.
+Kokoro-82M v1.0 by hexgrad: https://github.com/hexgrad/kokoro
+Model and voice styles distributed under Apache License 2.0; see LICENSE-KOKORO.txt.
+Original model: https://huggingface.co/hexgrad/Kokoro-82M
+
+Generated locally with sherpa-onnx 1.13.8 (Apache 2.0) and the Kokoro v1.0
+int8 ONNX conversion from k2-fsa/sherpa-onnx:
+https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+Archive SHA256: 4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e
+Model SHA256: 4b86207ef680e394d8343bee22dfc4c512e5c707c6d9578e3f35ab09bffd6b36
+Voice table SHA256: 1c5a5b983d3d50d8586d437a51f3faa2da7919ce76a013c081e65671a3447c29
+Generator: scripts/generate-voice-packs.py; catalog: config/voice-packs.json.
+Speech was trimmed, normalized and encoded as mono Opus in Ogg containers.
+See manifest.json for each clip's text, duration and SHA256.
+
+Only these audio clips are bundled. No neural model, Python runtime, speech
+inference service or cloud TTS is needed when playing them. Nonstandard warning
+intervals use the corresponding "soon" clip. Custom/renamed reminder text uses
+the user's system speech engine instead.

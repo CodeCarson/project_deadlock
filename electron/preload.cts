@@ -16,6 +16,7 @@ const bridge: Bridge = {
   recoverHistory: (accountId, ids) =>
     ipcRenderer.invoke("api:recoverHistory", accountId, ids),
   alertVoices: () => ipcRenderer.invoke("audio:voices"),
+  stopAlertSpeech: () => ipcRenderer.invoke("audio:stop"),
   speakAlert: (text, voiceId, speed, volume) =>
     ipcRenderer.invoke("audio:speak", text, voiceId, speed, volume),
   loadSettings: () => ipcRenderer.invoke("settings:load"),

@@ -263,6 +263,7 @@ export interface Bridge {
     matchIds: number[],
   ): Promise<{ recovered: number; errors: string[] }>;
   alertVoices(): Promise<{ id: string; name: string }[]>;
+  stopAlertSpeech(): Promise<void>;
   speakAlert(
     text: string,
     voiceId: string,

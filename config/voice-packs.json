@@ -1,0 +1,49 @@
+{
+  "voices": [
+    {
+      "id": "pack:am_michael",
+      "name": "Michael · American male",
+      "speaker": 16,
+      "locale": "us"
+    },
+    {
+      "id": "pack:af_heart",
+      "name": "Heart · American female",
+      "speaker": 3,
+      "locale": "us"
+    },
+    {
+      "id": "pack:bf_emma",
+      "name": "Emma · British female",
+      "speaker": 21,
+      "locale": "gb"
+    }
+  ],
+  "events": [
+    { "id": "small", "match": "Small camp", "spoken": "Small camp" },
+    { "id": "medium", "match": "Medium camp", "spoken": "Medium camp" },
+    { "id": "large", "match": "Large camp", "spoken": "Large camp" },
+    {
+      "id": "breakables",
+      "match": "Boxes and statues",
+      "spoken": "Boxes and statues",
+      "respawn": true
+    },
+    { "id": "bridge", "match": "Bridge buffs", "spoken": "Bridge buffs" },
+    { "id": "urn", "match": "Soul Urn", "spoken": "Soul urn" },
+    {
+      "id": "rift",
+      "match": "Unstable Rift",
+      "spoken": "Unstable rift",
+      "window": true
+    },
+    { "id": "boxes", "match": "Boxes", "spoken": "Boxes", "respawn": true },
+    {
+      "id": "statues",
+      "match": "Golden statues",
+      "spoken": "Golden statues",
+      "respawn": true
+    }
+  ],
+  "warnings": [5, 15, 30]
+}
