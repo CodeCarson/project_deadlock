@@ -1,0 +1,3 @@
+
+# Vendored artwork must keep the exact bytes recorded in sources.json on Windows.
+public/deadlock/*.svg -text

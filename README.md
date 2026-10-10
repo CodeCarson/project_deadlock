@@ -236,7 +236,7 @@ The renderer has no Node integration. Context isolation, renderer sandboxing, a 
 
 The experimental clock reader needs live Windows/Deadlock/FPS validation before it can be treated as dependable on your PC. Provider coverage may omit part of a player’s career; full history depends on the provider’s Steam access. Custom sound-file imports and a tray icon are also future enhancements. The Urn preset covers its first descent only; full tracking of pickups, delayed spawns and deliveries is a later timer enhancement.
 
-## Natural voices, game artwork and visual review (0.7.0)
+## Natural voices, game artwork and visual review (0.7.1)
 
 Settings offers seven local sound cues: chime, pulse, bell, knock, radio, glass and whistle. One **Voice** picker includes six bundled voices. **Silas** is a warm male storyteller, **June** is gentle and clear, and **The Broker** is an original Patron-inspired occult announcer. These three use Supertonic 3 preset styles (M5, F5 and M2), synthesized ahead of time with 16 steps. The Broker is not a Valve actor or character recording. The previous **Michael**, **Heart** and **Emma** Kokoro packs remain available under Classic. No Windows voice install, account, Internet connection or speech model is needed during playback. Saved selections are retained. Press **Test voice** to preview the selected voice.
 

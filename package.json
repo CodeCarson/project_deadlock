@@ -1,6 +1,6 @@
 {
   "name": "deadlock-companion",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "A Windows Deadlock companion with public player statistics and configurable match reminders",
   "author": "Deadlock Companion contributors",
