@@ -1,3 +1,4 @@
+import { DeadlockArt, eventArtwork } from "./components/DeadlockArt";
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import {
   Activity,
@@ -313,13 +314,24 @@ export default function App() {
           disabled={busy}
           onChange={(e) => change({ voiceId: e.target.value })}
         >
-          <optgroup label="Bundled · offline">
-            {bundledVoices.map((voice) => (
-              <option key={voice.id} value={voice.id}>
-                {voice.name}
-              </option>
-            ))}
-          </optgroup>
+          {["supertonic3", "kokoro"].map((engine) => (
+            <optgroup
+              key={engine}
+              label={
+                engine === "supertonic3"
+                  ? "Natural & character · offline"
+                  : "Classic · offline"
+              }
+            >
+              {bundledVoices
+                .filter((v) => v.engine === engine)
+                .map((voice) => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.name}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
           <optgroup label="System voices">
             <option value={systemVoiceId}>System · choose automatically</option>
             {voices.map((voice) => (
@@ -354,6 +366,13 @@ export default function App() {
         </select>
       </div>
       <button
+        className="button secondary small natural-pace"
+        disabled={busy}
+        onClick={() => change({ alertSpeed: 1 })}
+      >
+        Natural pace · 1×
+      </button>
+      <button
         className="button secondary full"
         disabled={testing}
         onClick={() => {
@@ -370,7 +389,8 @@ export default function App() {
         {bundledVoice(selectedVoiceId(settings.voiceId, settings.voiceStyle))
           ? "Bundled voice packs play built-in event alerts offline. Custom or renamed reminders use system speech."
           : "System voices read all reminders, including custom text. Available voices depend on your Windows installation."}{" "}
-        Speed shortens announcements and sound cues.
+        For the most natural cadence, try 1×. The Broker is an original occult
+        announcer, not a Valve character recording.
       </small>
     </>
   );
@@ -386,7 +406,11 @@ export default function App() {
           >
             <div className="rule-top">
               <span className={`rule-icon ${rule.category}`}>
-                <Icon size={21} />
+                {eventArtwork[rule.id] ? (
+                  <DeadlockArt name={eventArtwork[rule.id]} />
+                ) : (
+                  <Icon size={21} />
+                )}
               </span>
               <button
                 className={`toggle ${rule.enabled ? "on" : ""}`}
@@ -478,23 +502,35 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
-            <Crosshair size={27} />
+            <DeadlockArt name="spirit.svg" />
           </div>
           <div>
-            <strong>DEADLOCK</strong>
+            <DeadlockArt
+              name="logo.svg"
+              alt="Deadlock"
+              className="deadlock-wordmark"
+            />
             <span>COMPANION</span>
           </div>
         </div>
 
         <nav aria-label="Main navigation">
-          {navigation.map(({ name, icon: Icon, later }) => (
+          {navigation.map(({ name, later }) => (
             <button
               key={name}
               aria-label={name}
               className={`nav-item ${page === name ? "active" : ""}`}
               onClick={() => setPage(name)}
             >
-              <Icon size={19} />
+              <DeadlockArt
+                name={
+                  name === "Stats"
+                    ? "spirit.svg"
+                    : name === "Team Planner"
+                      ? "powerup.svg"
+                      : "urn.png"
+                }
+              />
               <span>{name}</span>
               {name === "Live Match" ? (
                 <span className="live-dot" />
@@ -512,7 +548,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.6.1 · Independent community tool</span>
+          <span className="version">v0.7.0 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -1218,7 +1254,7 @@ export default function App() {
               <Crosshair size={12} />
               DEADLOCK COMPANION
             </span>
-            <span>Independent project · Not affiliated with Valve</span>
+            <span>Unofficial companion · Deadlock artwork © Valve</span>
           </footer>
         </main>
       </div>

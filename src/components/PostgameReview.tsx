@@ -1,3 +1,5 @@
+import { HeroComparison } from "./HeroComparison";
+import { deathInterval } from "../core/improvement-graphs";
 import { useEffect, useRef, useState } from "react";
 import {
   ResponsiveContainer,
@@ -271,6 +273,7 @@ export function PostgameReview({
               )}
             </article>
           </div>
+          <HeroComparison rows={coaching.rows} focus={coaching.weakest?.key} />
           <button
             className="button secondary small"
             onClick={() =>
@@ -359,6 +362,46 @@ export function PostgameReview({
                 Review the decision before each death rather than assuming every
                 death was avoidable.
               </p>
+              {duration > 0 && detail.player.death_details.length > 0 && (
+                <div
+                  className="death-timeline"
+                  role="img"
+                  aria-label="Recorded deaths along the match clock"
+                >
+                  <div className="death-rail">
+                    {detail.player.death_details.map((death, index) => {
+                      const segment = deathInterval(
+                        death.game_time_s,
+                        death.death_duration_s,
+                        duration,
+                      );
+                      return (
+                        segment && (
+                          <i
+                            key={index}
+                            style={{
+                              left: `${segment.left}%`,
+                              width:
+                                segment.width === null
+                                  ? "2px"
+                                  : `max(2px, ${segment.width}%)`,
+                            }}
+                            title={`${formatClock(death.game_time_s)} · ${segment.width === null ? "duration unavailable" : `${Math.round((segment.width / 100) * duration)}s dead`}`}
+                          />
+                        )
+                      );
+                    })}
+                  </div>
+                  <div className="death-axis">
+                    <span>0:00</span>
+                    <span>{formatClock(duration / 2)}</span>
+                    <span>{formatClock(duration)}</span>
+                  </div>
+                  <small>
+                    Red spans show recorded time dead. Hover for the timestamp.
+                  </small>
+                </div>
+              )}
               <div className="death-events">
                 {detail.player.death_details.length ? (
                   detail.player.death_details.map((d, i) => (

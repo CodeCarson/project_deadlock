@@ -7,7 +7,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
 } from "recharts";
 import {
   comparison,
@@ -34,13 +33,6 @@ export const emptyResearch: Research = {
 };
 const n = (v: number | null, d = 1) =>
   v === null ? "—" : v.toLocaleString(undefined, { maximumFractionDigits: d });
-const actions = {
-  deaths:
-    "Review one death. Next game, count visible threats and choose an escape route before committing.",
-  combat:
-    "Arrive with a teammate before the next objective fight, with your key ability ready.",
-  farm: "Clear the next reachable wave before rotating. Take a nearby camp along that route.",
-};
 export function ImprovementCenter({
   matches,
   allMatches = matches,
@@ -154,8 +146,8 @@ export function ImprovementCenter({
       </div>
       <p className="muted">
         {gameModeName(chosen)} only · current hero/time filters apply ·{" "}
-        {trend.matches.length} scored matches. Modes are kept separate. Hero
-        composition, patch changes and opponents can affect trends.
+        {trend.matches.length} scored matches. Compare the same hero for a
+        clearer trend.
       </p>
       <div className="review-focus">
         {regression ? (
@@ -164,11 +156,9 @@ export function ImprovementCenter({
               Suggested review focus: {metricLabels[regression.key]}
             </strong>
             <p>
-              {n(regression.adverse * 100)}% adverse change across{" "}
-              {regression.count} recent versus {regression.previousCount}{" "}
-              previous measured games. This selects the largest relative
-              regression of the three measured rates; it is a review prompt, not
-              proof of its cause.
+              {n(regression.adverse * 100)}% worse across {regression.count}{" "}
+              recent versus {regression.previousCount} previous measured games.
+              Review one decision behind this trend.
             </p>
             <button
               className="button secondary small"
@@ -195,110 +185,110 @@ export function ImprovementCenter({
           </>
         )}
       </div>
-      <div className="coaching-grid">
-        {(["deaths", "combat", "farm"] as FocusMetric[]).map((key) => {
+      <div className="trend-grid" aria-label="Recent performance trends">
+        {(["deaths", "combat", "farm", "economy"] as const).map((key) => {
           const a = trend.recent[key],
-            b = trend.previous[key],
-            enough = a.count >= 5 && b.count >= 5;
-          const delta =
-            enough && a.value !== null && b.value !== null
-              ? a.value - b.value
-              : null;
+            b = trend.previous[key];
+          const enough =
+            a.count >= 5 &&
+            b.count >= 5 &&
+            a.value !== null &&
+            b.value !== null;
+          const delta = enough ? a.value! - b.value! : null;
           const improving =
             delta !== null && (key === "deaths" ? delta < 0 : delta > 0);
+          const label =
+            key === "economy" ? "Final net worth / min" : metricLabels[key];
           return (
-            <article className="coaching-card" key={key}>
-              <span className="card-label">{metricLabels[key]}</span>
-              <strong>{n(a.value)}</strong>
-              <small>
-                Recent {a.count} measured games · previous {n(b.value)} across{" "}
-                {b.count}
-              </small>
-              <p
-                className={
-                  delta === null ? "muted" : improving ? "positive" : "muted"
-                }
-              >
+            <article className="trend-card" key={key} data-metric={key}>
+              <span className="card-label">{label}</span>
+              <div className="trend-value">
+                <strong>{n(a.value, key === "economy" ? 0 : 1)}</strong>
+                <span>previous {n(b.value, key === "economy" ? 0 : 1)}</span>
+              </div>
+              <p className={improving ? "positive" : "muted"}>
                 {delta === null
-                  ? "Need at least five measured games in each comparison window."
-                  : `${delta > 0.05 ? "+" : ""}${n(Math.abs(delta) < 0.05 ? 0 : delta)} versus the previous equal window; ${Math.abs(delta) < 0.05 ? "essentially unchanged" : improving ? "moving in the intended direction" : "a pattern to review"}.`}
+                  ? "Need five measured games in each window."
+                  : Math.abs(delta) < (key === "economy" ? 0.5 : 0.05)
+                    ? "Holding steady"
+                    : `${n(Math.abs(delta), key === "economy" ? 0 : 1)} ${delta < 0 ? "less" : "more"} · ${improving ? "improving" : "review this pattern"}`}
               </p>
-              <p>{actions[key]}</p>
+              {rolling.length > 1 && (
+                <div
+                  className="trend-canvas"
+                  role="img"
+                  aria-label={`${label} rolling trend`}
+                >
+                  <ResponsiveContainer width="100%" height={150}>
+                    <LineChart
+                      data={rolling.slice(-40)}
+                      margin={{ top: 10, right: 12, bottom: 0, left: 0 }}
+                    >
+                      <CartesianGrid
+                        vertical={false}
+                        stroke="#d7c6a322"
+                        strokeDasharray="3 3"
+                      />
+                      <XAxis
+                        dataKey="label"
+                        minTickGap={50}
+                        stroke="#a3ada4"
+                        tick={{ fontSize: 10 }}
+                      />
+                      <YAxis
+                        width={42}
+                        stroke="#a3ada4"
+                        tick={{ fontSize: 10 }}
+                        domain={[0, "auto"]}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "#122321",
+                          border: "1px solid #d7c6a344",
+                        }}
+                        formatter={(value) => [
+                          n(Number(value), key === "economy" ? 0 : 1),
+                          label,
+                        ]}
+                      />
+                      <Line
+                        dataKey={key}
+                        stroke={
+                          key === "deaths"
+                            ? "#d9937e"
+                            : key === "combat"
+                              ? "#bca0e2"
+                              : key === "farm"
+                                ? "#b4ce98"
+                                : "#dfb578"
+                        }
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls={false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              <small>
+                Recent {a.count} vs previous {b.count} measured games ·{" "}
+                {key === "deaths" ? "lower" : "higher"} is better.
+              </small>
+              {key === "economy" && (
+                <small>
+                  Final wealth ÷ duration; not earned souls per minute.
+                </small>
+              )}
             </article>
           );
         })}
-        <article className="coaching-card">
-          <span className="card-label">RESULTS & ECONOMY</span>
-          <strong>{n(trend.recent.winRate)}%</strong>
-          <small>
-            {trend.recent.scored} recent scored games · previous{" "}
-            {n(trend.previous.winRate)}%
-          </small>
-          <p>
-            {n(trend.recent.economy.value, 0)} final net worth / min across{" "}
-            {trend.recent.economy.count} games. This is final wealth divided by
-            duration, not earned souls per minute.
-          </p>
-          <p>
-            Use outcomes alongside survival and resource trends. Winning more or
-            recording higher KDA alone does not show which decisions improved.
-          </p>
-        </article>
       </div>
-      {rolling.length > 1 && (
-        <div className="chart-panel">
-          <h3>Rolling form</h3>
-          <p>
-            Up to ten scored games per point, with at least five. Rates are
-            weighted by match duration.
-          </p>
-          <div
-            className="chart-canvas"
-            role="img"
-            aria-label="Rolling survival combat and farming trends"
-          >
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={rolling}>
-                <CartesianGrid stroke="#30313c" strokeDasharray="3 3" />
-                <XAxis dataKey="label" minTickGap={50} stroke="#9594a7" />
-                <YAxis yAxisId="combat" stroke="#9594a7" />
-                <YAxis yAxisId="farm" orientation="right" stroke="#9594a7" />
-                <Tooltip
-                  contentStyle={{
-                    background: "#191a22",
-                    border: "1px solid #34323f",
-                  }}
-                />
-                <Legend />
-                <Line
-                  yAxisId="combat"
-                  dataKey="deaths"
-                  name="Deaths / 10 min"
-                  stroke="#ee9296"
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  yAxisId="combat"
-                  dataKey="combat"
-                  name="Kills + assists / 10 min"
-                  stroke="#b69ddf"
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  yAxisId="farm"
-                  dataKey="farm"
-                  name="Last hits / min"
-                  stroke="#dcb06d"
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      <p className="muted trend-method">
+        Lines show duration-weighted rolling rates across up to ten scored
+        games. A point needs five measured games; gaps mean missing data. Window
+        comparisons use equal, separate groups of games.
+      </p>
       <div className="goal-panel">
         <h3>One focus, measurable progress</h3>
         {goal && (
@@ -409,52 +399,55 @@ export function ImprovementCenter({
         </small>
         {error && <p role="alert">{error}</p>}
       </div>
-      <h3>Hero evidence</h3>
-      <p>
-        Scored win rate with a 95% Wilson interval. A wide interval or fewer
-        than ten scored games is limited evidence; this is not a tier list.
-      </p>
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Hero</th>
-              <th>Scored games</th>
-              <th>Win rate</th>
-              <th>95% interval</th>
-              <th>Deaths / 10 min</th>
-              <th>Kills + assists / 10 min</th>
-              <th>Last hits / min</th>
-              <th>Evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {strengths.slice(0, 8).map((h) => (
-              <tr key={h.heroId}>
-                <td>
-                  {heroes.find((hero) => hero.id === h.heroId)?.name ??
-                    `Hero ${h.heroId}`}
-                </td>
-                <td>{h.wins + h.losses}</td>
-                <td>{n(h.winRate)}%</td>
-                <td>
-                  {h.interval
-                    ? `${n(h.interval.low)}–${n(h.interval.high)}%`
-                    : "—"}
-                </td>
-                <td>{n(h.rates.deaths.value)}</td>
-                <td>{n(h.rates.combat.value)}</td>
-                <td>{n(h.rates.farm.value)}</td>
-                <td>
-                  {h.wins + h.losses < 10
-                    ? "Small sample"
-                    : "Worth reviewing alongside role and patch"}
-                </td>
+      <details className="trend-evidence">
+        <summary>Hero evidence & win-rate uncertainty</summary>
+        <h3>Hero evidence</h3>
+        <p>
+          Scored win rate with a 95% Wilson interval. A wide interval or fewer
+          than ten scored games is limited evidence; this is not a tier list.
+        </p>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Hero</th>
+                <th>Scored games</th>
+                <th>Win rate</th>
+                <th>95% interval</th>
+                <th>Deaths / 10 min</th>
+                <th>Kills + assists / 10 min</th>
+                <th>Last hits / min</th>
+                <th>Evidence</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {strengths.slice(0, 8).map((h) => (
+                <tr key={h.heroId}>
+                  <td>
+                    {heroes.find((hero) => hero.id === h.heroId)?.name ??
+                      `Hero ${h.heroId}`}
+                  </td>
+                  <td>{h.wins + h.losses}</td>
+                  <td>{n(h.winRate)}%</td>
+                  <td>
+                    {h.interval
+                      ? `${n(h.interval.low)}–${n(h.interval.high)}%`
+                      : "—"}
+                  </td>
+                  <td>{n(h.rates.deaths.value)}</td>
+                  <td>{n(h.rates.combat.value)}</td>
+                  <td>{n(h.rates.farm.value)}</td>
+                  <td>
+                    {h.wins + h.losses < 10
+                      ? "Small sample"
+                      : "Worth reviewing alongside role and patch"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </section>
   );
 }

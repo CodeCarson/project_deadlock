@@ -58,6 +58,9 @@ test("production offline voice files decode and finish, including an alert while
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByLabel("Alert speed", { exact: true }).selectOption("1.5");
     for (const [index, voice] of [
+      "silas",
+      "june",
+      "broker",
       "am_michael",
       "af_heart",
       "bf_emma",
@@ -81,8 +84,19 @@ test("production offline voice files decode and finish, including an alert while
       ).toBe(true);
     }
     expect(await page.evaluate(() => (window as any).voiceEnds)).toHaveLength(
-      3,
+      6,
     );
+    await expect
+      .poll(() =>
+        page
+          .locator(".brand .deadlock-wordmark")
+          .evaluate(
+            (image: HTMLImageElement) =>
+              image.complete && image.naturalWidth > 0,
+          ),
+      )
+      .toBe(true);
+    await page.getByLabel("Voice", { exact: true }).selectOption("pack:broker");
     await page.evaluate(() => window.companion!.stopAlertSpeech());
     await page.getByLabel("Speak event announcements").click();
     await expect(page.getByLabel("Speak event announcements")).toBeChecked();
@@ -106,7 +120,10 @@ test("production offline voice files decode and finish, including an alert while
     );
     await expect
       .poll(() => page.evaluate(() => (window as any).voiceEnds.length))
-      .toBe(4);
+      .toBe(7);
+    expect(
+      (await page.evaluate(() => (window as any).voiceStarts)).at(-1).url,
+    ).toContain("/voices/broker/bridge-ready.ogg");
     for (const end of await page.evaluate(() => (window as any).voiceEnds)) {
       expect(end.duration).toBeGreaterThan(0.35);
       expect(end.duration).toBeLessThan(6);

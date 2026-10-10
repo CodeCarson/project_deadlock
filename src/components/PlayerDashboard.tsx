@@ -490,10 +490,21 @@ export function PlayerDashboard({
           {(view === "Dashboard" || view === "Heroes") && (
             <PerformanceCharts matches={filtered} ranks={data.ranks} />
           )}
+          {(view === "Analysis" || view === "Stats") && (
+            <PostgameReview
+              key={`review-${data.accountId}`}
+              accountId={data.accountId}
+              matches={filtered}
+              allMatches={data.history}
+              heroes={data.heroes}
+              research={research}
+              onSave={saveResearch}
+            />
+          )}
           {(view === "Dashboard" ||
             view === "Analysis" ||
             view === "Stats") && (
-            <details className="panel stats-disclosure" open={view !== "Stats"}>
+            <details className="panel stats-disclosure" open>
               <summary>Your improvement plan & trends</summary>
               <ImprovementCenter
                 key={`improve-${data.accountId}`}
@@ -505,17 +516,6 @@ export function PlayerDashboard({
                 onSave={saveResearch}
               />
             </details>
-          )}
-          {(view === "Analysis" || view === "Stats") && (
-            <PostgameReview
-              key={`review-${data.accountId}`}
-              accountId={data.accountId}
-              matches={filtered}
-              allMatches={data.history}
-              heroes={data.heroes}
-              research={research}
-              onSave={saveResearch}
-            />
           )}
           {view === "Stats" && (
             <>

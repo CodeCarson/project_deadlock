@@ -149,6 +149,16 @@ test("one Stats workspace gives hero-aware game coaching, a saved Companion esti
     page.getByText("Performance estimate updated.", { exact: true }),
   ).toBeVisible();
   await expect(page.locator(".top-hero-card")).toHaveCount(3);
+  await expect(
+    page
+      .getByRole("group", { name: "Hero-adjusted performance strengths" })
+      .getByRole("meter"),
+  ).toHaveCount(4);
+  await expect(page.locator(".rank-emblem")).toHaveAttribute(
+    "src",
+    /deadlock\/rank-\d+\.webp$/,
+  );
+  await expect(page.getByAltText("Deadlock", { exact: true })).toBeVisible();
   await expect(page.locator(".top-hero-card").first()).toContainText(
     "Infernus",
   );
@@ -157,6 +167,18 @@ test("one Stats workspace gives hero-aware game coaching, a saved Companion esti
   await expect(page.locator(".match-coaching")).toContainText("Review this");
   await expect(page.locator(".match-coaching")).toContainText("Deaths");
   await expect(page.locator(".match-coaching")).toContainText("brawler");
+  const comparison = page.getByRole("region", {
+    name: "This game versus hero reference",
+  });
+  await expect(comparison.locator(".comparison-row")).toHaveCount(4);
+  await expect(comparison.locator(".comparison-row.focus")).toContainText(
+    "Deaths",
+  );
+  await expect(comparison.locator(".comparison-row.focus")).toHaveAttribute(
+    "data-direction",
+    "review",
+  );
+  await page.screenshot({ path: "/tmp/deadlock-stats-v7.png", fullPage: true });
   await page
     .getByRole("button", { name: "Add this focus to my note", exact: true })
     .click();

@@ -1,0 +1,4 @@
+Deadlock artwork, logos, rank badges and game UI icons are the property of Valve Corporation.
+This is an independent, unofficial fan companion; Valve does not endorse it.
+These unmodified game-art assets are not licensed under the application MIT license.
+Public mirrors, pinned source revisions and file SHA256 hashes are recorded in sources.json.

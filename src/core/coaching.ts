@@ -63,23 +63,20 @@ export function rollingPerformance(matches: Match[]) {
   const sorted = matches
     .filter((m) => outcome(m) !== "unscored")
     .sort((a, b) => a.start_time - b.start_time || a.match_id - b.match_id);
-  return sorted.flatMap((m, i) =>
-    i < 4
-      ? []
-      : [
-          {
-            matchId: m.match_id,
-            label: new Date(m.start_time * 1000).toLocaleDateString(),
-            ...Object.fromEntries(
-              Object.entries(
-                performance(sorted.slice(Math.max(0, i - 9), i + 1)),
-              )
-                .filter(([k]) => ["deaths", "combat", "farm"].includes(k))
-                .map(([k, v]) => [k, (v as { value: number | null }).value]),
-            ),
-          },
-        ],
-  );
+  return sorted.flatMap((m, i) => {
+    if (i < 4) return [];
+    const rates = performance(sorted.slice(Math.max(0, i - 9), i + 1));
+    return [
+      {
+        matchId: m.match_id,
+        label: new Date(m.start_time * 1000).toLocaleDateString(),
+        deaths: rates.deaths.count >= 5 ? rates.deaths.value : null,
+        combat: rates.combat.count >= 5 ? rates.combat.value : null,
+        farm: rates.farm.count >= 5 ? rates.farm.value : null,
+        economy: rates.economy.count >= 5 ? rates.economy.value : null,
+      },
+    ];
+  });
 }
 export function winInterval(wins: number, losses: number) {
   const n = wins + losses;

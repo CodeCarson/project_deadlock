@@ -1,0 +1,238 @@
+{
+  "rank-0.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank0/badge_lg_psd.webp",
+    "sha256": "f19a0178fe1f2de3a16d1def947a2245b4a0e7c6d4578c7525ff4c4ae72c81a4"
+  },
+  "rank-1.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank1/badge_lg_psd.webp",
+    "sha256": "53b9036d8a074948c9e9ba146af6767516e1256d2eaf7fb73d3b976858daa65a"
+  },
+  "rank-2.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank2/badge_lg_psd.webp",
+    "sha256": "509da9ffdf77af71359d293cb34ab29a4f2ebdd19ec765f4e7f58977fe56fc81"
+  },
+  "rank-3.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank3/badge_lg_psd.webp",
+    "sha256": "6a11c6cf6a467bb2c9cff26080326059a12bf0509c20c51bea14fab3763e9ac5"
+  },
+  "rank-4.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank4/badge_lg_psd.webp",
+    "sha256": "0e36b07f846f252e14469aac4ee624db89731c860af9e8ef99ddbacab4844a7d"
+  },
+  "rank-5.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank5/badge_lg_psd.webp",
+    "sha256": "046bef3afd2e614b90675e5e30216b3586a6761049fd205ffc49dedad4bf093a"
+  },
+  "rank-6.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank6/badge_lg_psd.webp",
+    "sha256": "fdf25a3489aa8c7c5907b138be41c2d241c0b69e02dbe28e616f4fd4f597ba2c"
+  },
+  "rank-7.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank7/badge_lg_psd.webp",
+    "sha256": "0b8a89e8236410e3912a4827055ebbeadc82a2cebb983fff5e8e89694623b9ff"
+  },
+  "rank-8.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank8/badge_lg_psd.webp",
+    "sha256": "b6bb3489b769d487ea177344e4ac62ccbd3258050b1cb7070f0724b5f820b7de"
+  },
+  "rank-9.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank9/badge_lg_psd.webp",
+    "sha256": "0106c79425a45d10d2f0ad2dca7033a680f09b2f659217d93afa45f1ee53d982"
+  },
+  "rank-10.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank10/badge_lg_psd.webp",
+    "sha256": "de4a48bf5ff54d3ff5ca881ec5e9cb4aae2c5960c47e7efe3cb275e7a21db92e"
+  },
+  "rank-11.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/ranks/rank11/badge_lg_psd.webp",
+    "sha256": "276e9268033fb822324f154dad51a9ba235d16a142fa18d282eeaf119dfe148b"
+  },
+  "spirit.svg": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/hud/core/icon_spirit.svg",
+    "sha256": "58db00045d9585aaeea90ee613abad7364bdc1c2d2b0f983c6c70efbe28fb217"
+  },
+  "idol.webp": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/hud/data_feed_golden_idol_png.webp",
+    "sha256": "638c52e974c05cc2b7a16ee98093ffceca63aa91a04217dca655042478768374"
+  },
+  "powerup.svg": {
+    "url": "https://raw.githubusercontent.com/Deadbotgg/deadlock-assets/117fd618e8e36675a845be3859528d178333f23f/images/hud/modifiers/icon_powerup.svg",
+    "sha256": "684e67395b8b89d079a76c13dbb3b50d54aa286a44521c2388c9dc5cadd16cc4"
+  },
+  "logo.svg": {
+    "url": "https://raw.githubusercontent.com/DanGeffroy/deadlock-timer/9cf96284e3bb47da39ee6f581581bf9fd95a8e4a/src/assets/deadlock_logo_dark.svg",
+    "sha256": "55de41eda5da60b90058bbd418cb42f959b46c3a940bcb4258d386948f52339d"
+  },
+  "camp-small.png": {
+    "url": "https://raw.githubusercontent.com/DanGeffroy/deadlock-timer/9cf96284e3bb47da39ee6f581581bf9fd95a8e4a/src/assets/map-icons/MapEasyCampIcon.png",
+    "sha256": "2113cb995c2840b8ba8af070e48d3bc8514928bef9b767045e62f3effaedfe54"
+  },
+  "camp-medium.png": {
+    "url": "https://raw.githubusercontent.com/DanGeffroy/deadlock-timer/9cf96284e3bb47da39ee6f581581bf9fd95a8e4a/src/assets/map-icons/MapMediumCampIcon.png",
+    "sha256": "bf42323ec2f99dc83e12b0ac65f23d8d3b917d8079aa03b5cde8a9db7406c335"
+  },
+  "camp-large.png": {
+    "url": "https://raw.githubusercontent.com/DanGeffroy/deadlock-timer/9cf96284e3bb47da39ee6f581581bf9fd95a8e4a/src/assets/map-icons/MapHardCampIcon.png",
+    "sha256": "2d463a6deb2707dbb2580ee51531e09baf008f36fa229adcc41cfd67249722d8"
+  },
+  "urn.png": {
+    "url": "https://raw.githubusercontent.com/DanGeffroy/deadlock-timer/9cf96284e3bb47da39ee6f581581bf9fd95a8e4a/src/assets/map-icons/64px-Soul_Urn.png",
+    "sha256": "56d234ac6a9c6b0d3c6d24d17b4066792242ac5d7b4898d474ada1b6a8bd6a83"
+  },
+  "buff.png": {
+    "url": "https://raw.githubusercontent.com/DanGeffroy/deadlock-timer/9cf96284e3bb47da39ee6f581581bf9fd95a8e4a/src/assets/map-icons/64px-Powerup_gun.png",
+    "sha256": "6932df52c9ac832562899dadfe06e4de9e7071bbc9ee07b43a30c5c94e77e51a"
+  },
+  "hero-abrams.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Abrams.png",
+    "sha256": "b7e0892e15e25f524d545bb0c3dd9e52a4a782d0bef84cbda4ac9523366cca2b"
+  },
+  "hero-apollo.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Apollo.png",
+    "sha256": "4d37ae2ad80a716bc6398f5ddb84ab2f8cab8a1ebe106f21bed4038017df53f5"
+  },
+  "hero-bebop.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Bebop.png",
+    "sha256": "7bb10e5ef7040829f922b40e1212c072b7789e290b77aa11d3c8505b3b691cb3"
+  },
+  "hero-billy.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Billy.png",
+    "sha256": "3851b2d9de5f6ff1a268dbb4cc20b9e2e0140dc441b0ae11e61eed25c5ae0f98"
+  },
+  "hero-calico.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Calico.png",
+    "sha256": "382a67f745039be0b6b3815cba5c063720aeaf4df81a6b86bb583ad64d9f4eea"
+  },
+  "hero-celeste.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Celeste.png",
+    "sha256": "1e22fa1bcae434e6aef027444aafe8005ac1f5a122e7ecba4ad5fda7c1b3cdf5"
+  },
+  "hero-drifter.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Drifter.png",
+    "sha256": "ee0203355872a9af341cc195837e2d3be4bf070829435bb1d49d0eee933689ff"
+  },
+  "hero-dynamo.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Dynamo.png",
+    "sha256": "eafcd33dcd5b80765a486e9e921794dfc069cf73225ddb3ed1109d3aef9920b2"
+  },
+  "hero-graves.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Graves.png",
+    "sha256": "3c8efdcc86a2a479f4d36088e6e0f0903f48e455fcc09f70e732f3fc9bb8172d"
+  },
+  "hero-grey-talon.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Grey_Talon.png",
+    "sha256": "3f23c83920dfc8a7cbb42d9d566ebca36808ef3213f8cd2ef6a8e6b2da270c9f"
+  },
+  "hero-haze.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Haze.png",
+    "sha256": "2092e83613eeb2dc35991ee4b5ea99b87cd835c06edfb19159f8a982fe822ea8"
+  },
+  "hero-holliday.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Holliday.png",
+    "sha256": "96912db05b3b5c351e7c113088d6b76a0fa82800397f2ecded2f290482aea3f9"
+  },
+  "hero-infernus.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Infernus.png",
+    "sha256": "6b8844b6a3a74dbb37a943e437e4e5fb6e676730c54af12f66e76a36ea04a3a3"
+  },
+  "hero-ivy.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Ivy.png",
+    "sha256": "68525ec91e6ea4c6b7c62b097b1fc9246825fcc7e58d448801c0b45bc4d26b8b"
+  },
+  "hero-kelvin.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Kelvin.png",
+    "sha256": "fb645d23ddcc656dc5125aa4e97f6ad621ff1ef60fdc76183b73d2a494a3b713"
+  },
+  "hero-lady-geist.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Lady_Geist.png",
+    "sha256": "17c47f6868ead94a89dd51fdbd8b0fedf7fa73836c18f7e21dd8769d599de903"
+  },
+  "hero-lash.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Lash.png",
+    "sha256": "bdd5bc15ffd667b9a7b0dbfa9a0e2d82077f1003d8ce9f1e0ea6d685d1c10b1f"
+  },
+  "hero-mcginnis.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/McGinnis.png",
+    "sha256": "c022c159cf2d80fe8f289947fcdbfad3fc4dae0d4d9de28edf9bfd50399abbc3"
+  },
+  "hero-mina.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Mina.png",
+    "sha256": "bf55258780287c5f66d701509edf3d09170a698db458455da708f17c0400a0a9"
+  },
+  "hero-mirage.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Mirage.png",
+    "sha256": "e806c585ff12c68be8a6d716466206fdb8bed78da5e2a54483638de22d408928"
+  },
+  "hero-mo-and-krill.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Mo_and_Krill.png",
+    "sha256": "2059b272e54d517ca7a302179cac6177ad8aabd1e595e02f1e7f5c0d1a22eccd"
+  },
+  "hero-paige.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Paige.png",
+    "sha256": "2b5452423ffc159e121cee5a93244f172d1ed2dd637ae9813d4321a9021aa8af"
+  },
+  "hero-paradox.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Paradox.png",
+    "sha256": "2722e3ff594a94d85774cbc9bca45151fd4c67e0ded12e0f759f4302d3b07d0c"
+  },
+  "hero-pocket.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Pocket.png",
+    "sha256": "f5d1d9c3adc880512aab5d4548cf215f2e1eb2653a310bc7e08a5295084279ad"
+  },
+  "hero-rem.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Rem.png",
+    "sha256": "abfc9d15124fad568f2cbd2a531a8942dca2697927c5f95cd761e2fc48f98402"
+  },
+  "hero-seven.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Seven.png",
+    "sha256": "d30d2908444cfcf1f4858ad2dc603fb48b1ec764f12c508bcdb3da981bce9b89"
+  },
+  "hero-shiv.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Shiv.png",
+    "sha256": "440dd929ea3d41cd41cd243d8db9fe8fd74bb41551d6888d9a6dcb3bec208905"
+  },
+  "hero-silver.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Silver.png",
+    "sha256": "b9a4b84d2dbc90d95aa0ed3ba3538cd4434d426fcac9dbc5c87c8c49b118dabd"
+  },
+  "hero-sinclair.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Sinclair.png",
+    "sha256": "d7b096ddddce0b5b967bf8a2016d2504173fc0c386ec571322c28d9be1c66504"
+  },
+  "hero-the-doorman.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/The_Doorman.png",
+    "sha256": "6531c3fc39b97d5c2ef320685181fc546c47c9375e49788c637f9643f5cfca47"
+  },
+  "hero-venator.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Venator.png",
+    "sha256": "ae50b79c32ad2bc39a23458a1848fb3ee7d47fc8eb980910d90c9d3c4dbc1f5f"
+  },
+  "hero-victor.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Victor.png",
+    "sha256": "d2ed2d989df4e12ab82170906214c96344f14295b5badd5380e172ee3af13ccc"
+  },
+  "hero-vindicta.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Vindicta.png",
+    "sha256": "d0feb9eee23d045fab97abeab2568a601f4b7036524812d9a59ca4252a942c95"
+  },
+  "hero-viscous.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Viscous.png",
+    "sha256": "bbe72a4ed0dc2e637ae85a661c674045f07fd3f8ae54ce4976122b2e65b81780"
+  },
+  "hero-vyper.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Vyper.png",
+    "sha256": "baaf500cc6ec13194a5bc016df79efd2a967ceba365c78f515df571f3fe3c37e"
+  },
+  "hero-warden.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Warden.png",
+    "sha256": "67ae3da59d36070cf6a952e581c0bb4751cf70e87ae2f38bacf67f6bd3866e6c"
+  },
+  "hero-wraith.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Wraith.png",
+    "sha256": "ff15c7c7eaefbf981fa42ab22a1679ac8f55dbf6ee54530e8c2afeee4e90a311"
+  },
+  "hero-yamato.png": {
+    "url": "https://raw.githubusercontent.com/puretriple7/deadlock-icons/05d8f75c1598d4c112fb739c20edf33f255a6f6e/Yamato.png",
+    "sha256": "e17b272bff6e63503a998b700aa76f30e9179d7f4753ead12e351fa7e42f11c7"
+  }
+}

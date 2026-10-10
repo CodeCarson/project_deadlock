@@ -20,3 +20,16 @@ Only these audio clips are bundled. No neural model, Python runtime, speech
 inference service or cloud TTS is needed when playing them. Nonstandard warning
 intervals use the corresponding "soon" clip. Custom/renamed reminder text uses
 the user's system speech engine instead.
+
+Natural / character packs: Silas (preset M5), June (F5) and The Broker (M2).
+Generated with Supertonic 3 by Supertone, 16 synthesis steps.
+The Broker is an original Patron-inspired occult announcer style; it does not
+clone a Valve character or actor. These display names are app preset names.
+Official source: https://github.com/supertone-oss-archive/supertonic
+Model: https://huggingface.co/supertone-oss-archive/supertonic-3
+Model license: OpenRAIL-M (sample code MIT); LICENSE-SUPERTONIC-MODEL.txt.
+License reference mirrored from https://github.com/DarkCenobyte/scacelith-chess/blob/c8f96e7c13f3f527a0c73ae8ced55237fb48ce48/assets/licences/Supertonic-3-OpenRAIL-M.txt
+Converted model: https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2
+Archive SHA256: 82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427
+Generator: scripts/generate-natural-voices.py. Model checksums are pinned there.
+Only generated audio is distributed; model weights and inference code are not.

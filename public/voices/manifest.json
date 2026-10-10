@@ -1,5 +1,5 @@
 {
-  "model": "Kokoro-82M v1.0 int8",
+  "model": "Kokoro-82M v1.0 int8 + Supertonic 3 int8",
   "clips": {
     "am_michael/small-ready.ogg": {
       "text": "Small camp ready.",
@@ -795,6 +795,801 @@
       "text": "Golden statues can respawn.",
       "seconds": 1.883,
       "sha256": "e8fd942c3278f7c9d0df784395d370235b87493efe0e01840f2abaf462b63b46"
+    },
+    "silas/small-ready.ogg": {
+      "text": "Small camp is ready.",
+      "seconds": 1.252,
+      "sha256": "1f01ee68fc2aa81c914843a2c2dc640317e753dc15a468843137a9891d273b21"
+    },
+    "silas/small-soon.ogg": {
+      "text": "Small camp will be ready soon.",
+      "seconds": 1.67,
+      "sha256": "ec4ef554da9753efa8295156835d3e65c6d1ac01608969066682fd641a3b0df4"
+    },
+    "silas/small-in-5.ogg": {
+      "text": "Small camp in 5 seconds.",
+      "seconds": 1.609,
+      "sha256": "9b105425bdd3e8c10ba097a4502d8c3416b06a547dc7f0e40c33d17268ab969e"
+    },
+    "silas/small-in-15.ogg": {
+      "text": "Small camp in 15 seconds.",
+      "seconds": 1.836,
+      "sha256": "fcae17044f8d8f9a6b2cd44906797e971104c13eaddd5e9fddcd1c27eb855944"
+    },
+    "silas/small-in-30.ogg": {
+      "text": "Small camp in 30 seconds.",
+      "seconds": 1.612,
+      "sha256": "6fa724be0390e754b1609747ef9132ad7c65052076d281724f1243a27c7f1573"
+    },
+    "silas/medium-ready.ogg": {
+      "text": "Medium camp is ready.",
+      "seconds": 1.245,
+      "sha256": "24528650ea3e5dfb1259e9da35428732017a7987a5a6c267139d0113b8ab657c"
+    },
+    "silas/medium-soon.ogg": {
+      "text": "Medium camp will be ready soon.",
+      "seconds": 1.783,
+      "sha256": "32425b5d038e88aa47f488d1d4b91cc6cf4438767a311b892f7f17e0e25d9f98"
+    },
+    "silas/medium-in-5.ogg": {
+      "text": "Medium camp in 5 seconds.",
+      "seconds": 1.605,
+      "sha256": "d2675b13c18207279dbef9f836c884d6990f32f4e1b16f6274adfb5287742838"
+    },
+    "silas/medium-in-15.ogg": {
+      "text": "Medium camp in 15 seconds.",
+      "seconds": 1.843,
+      "sha256": "97ae5da3496ca3841778c824b844f88837c38873b2546245f9f96986435f3bba"
+    },
+    "silas/medium-in-30.ogg": {
+      "text": "Medium camp in 30 seconds.",
+      "seconds": 1.927,
+      "sha256": "d38bb837ab89c2d67f8539d76892318692a66e987f3498db6423289a05eb7fe1"
+    },
+    "silas/large-ready.ogg": {
+      "text": "Large camp is ready.",
+      "seconds": 1.187,
+      "sha256": "f558182f521d9731d13e2bf31d7f4551f06827cd5c6ea223fd1deb74ce694fef"
+    },
+    "silas/large-soon.ogg": {
+      "text": "Large camp will be ready soon.",
+      "seconds": 1.595,
+      "sha256": "a70e22dd5c1ec053dd4a111a6dba540d5eb3c724a0f4bec20a41f38eec1a4cf6"
+    },
+    "silas/large-in-5.ogg": {
+      "text": "Large camp in 5 seconds.",
+      "seconds": 1.608,
+      "sha256": "ee10c8b042d6f9d594fab7595b9a6c322751de6c46ecc9519dff8f9a2b918e60"
+    },
+    "silas/large-in-15.ogg": {
+      "text": "Large camp in 15 seconds.",
+      "seconds": 1.695,
+      "sha256": "ed18a32550e4919b706453e5b75f8d750eaadafbf5de0e7b127595115e187abc"
+    },
+    "silas/large-in-30.ogg": {
+      "text": "Large camp in 30 seconds.",
+      "seconds": 1.676,
+      "sha256": "c0c82f2d8e59ace8c8259c42ca144004b0e0abc393429d1d5d2a49c22e21eb26"
+    },
+    "silas/breakables-ready.ogg": {
+      "text": "Boxes and statues are ready.",
+      "seconds": 1.533,
+      "sha256": "86ef523263578ce2f8304ac6cb32148f9784d6b01d0d603ed549e6a3b01edd86"
+    },
+    "silas/breakables-soon.ogg": {
+      "text": "Boxes and statues will be ready soon.",
+      "seconds": 1.996,
+      "sha256": "7fc7f53cbd81883a7acaab6f6ef272b45bfcdb0bb4bbcb64e325044554b1f935"
+    },
+    "silas/breakables-in-5.ogg": {
+      "text": "Boxes and statues in 5 seconds.",
+      "seconds": 2.019,
+      "sha256": "400b79313e6cbc59c4b5229cda072ae9a486ec7eac70cf61d0339c752410e584"
+    },
+    "silas/breakables-in-15.ogg": {
+      "text": "Boxes and statues in 15 seconds.",
+      "seconds": 2.117,
+      "sha256": "c1db2847899c0ca203045f5b0e4aa55358ed27a2763c80afab11171a833011d0"
+    },
+    "silas/breakables-in-30.ogg": {
+      "text": "Boxes and statues in 30 seconds.",
+      "seconds": 2.054,
+      "sha256": "6f33f27aa16f5f1a87d75fcad724d936c21c95776199e7bce98793cd3b0d77fb"
+    },
+    "silas/breakables-respawn.ogg": {
+      "text": "Boxes and statues can respawn.",
+      "seconds": 1.719,
+      "sha256": "931d802ef463918ebabab264a683c9e06ab99dab9ca0cd78fb6f189a9b47cc38"
+    },
+    "silas/bridge-ready.ogg": {
+      "text": "Bridge buffs are ready.",
+      "seconds": 1.187,
+      "sha256": "54d883c0baad7cae89cd0e9c6be6153930015d19d55bc4ba872468478d0445f5"
+    },
+    "silas/bridge-soon.ogg": {
+      "text": "Bridge buffs will be ready soon.",
+      "seconds": 1.644,
+      "sha256": "d226975454f5051f3de528c165b5fa197832027d58b0fc2c0d8ceeefef7f3dfb"
+    },
+    "silas/bridge-in-5.ogg": {
+      "text": "Bridge buffs in 5 seconds.",
+      "seconds": 1.51,
+      "sha256": "8ab54298905ed1e65bb05110b9723d8902a009b7f4215f92a94456f3f51cf051"
+    },
+    "silas/bridge-in-15.ogg": {
+      "text": "Bridge buffs in 15 seconds.",
+      "seconds": 1.711,
+      "sha256": "4e2829f884a17f0414b784e5bd53b7333e8a0534d586535fd9028a28534b0f5b"
+    },
+    "silas/bridge-in-30.ogg": {
+      "text": "Bridge buffs in 30 seconds.",
+      "seconds": 1.583,
+      "sha256": "92f8b4d88784491544a830987ad9cdfa7ebfc74203b60dfa25b796ef16aa813f"
+    },
+    "silas/urn-ready.ogg": {
+      "text": "Soul urn is ready.",
+      "seconds": 1.133,
+      "sha256": "799c2805b95919949fbfc04d223108670341abacfd575b472f09fe07518d7601"
+    },
+    "silas/urn-soon.ogg": {
+      "text": "Soul urn will be ready soon.",
+      "seconds": 1.502,
+      "sha256": "87f10f10a6cad3d5fce0167ec9b368a2833ed29cc7a069eb35065a125018f6cf"
+    },
+    "silas/urn-in-5.ogg": {
+      "text": "Soul urn in 5 seconds.",
+      "seconds": 1.508,
+      "sha256": "1201885507e208f62f7caad0001039d6e64efc3a2d96538945b9ea3588233711"
+    },
+    "silas/urn-in-15.ogg": {
+      "text": "Soul urn in 15 seconds.",
+      "seconds": 1.608,
+      "sha256": "7c04573d662a84df3aacbe047d040329db4bb3f86b68385df444597b0ca34de6"
+    },
+    "silas/urn-in-30.ogg": {
+      "text": "Soul urn in 30 seconds.",
+      "seconds": 1.799,
+      "sha256": "bf2dedd0d25193c38cfeb6aa3388395087fcc7d81ae733c6ad921a9b5e3aea49"
+    },
+    "silas/rift-ready.ogg": {
+      "text": "Unstable rift is ready.",
+      "seconds": 1.376,
+      "sha256": "937f087b1bf05938a312cf3f386ff74ee30cc1771f29de247e7cf3b6996c43e3"
+    },
+    "silas/rift-soon.ogg": {
+      "text": "Unstable rift will be ready soon.",
+      "seconds": 1.774,
+      "sha256": "6bec81db59797586331a0bec2b19260a8f553f8d974aa2a1e81bf4ff05872938"
+    },
+    "silas/rift-in-5.ogg": {
+      "text": "Unstable rift in 5 seconds.",
+      "seconds": 1.792,
+      "sha256": "f7f4e2cfde095cfda2c75a8dfc037d2e74b53ad12618d7d22847aee1953d6d8c"
+    },
+    "silas/rift-in-15.ogg": {
+      "text": "Unstable rift in 15 seconds.",
+      "seconds": 1.819,
+      "sha256": "5e9bf9d0cebe0420adbcf6211939c33c07bf3b25902752750eb062a41db0df00"
+    },
+    "silas/rift-in-30.ogg": {
+      "text": "Unstable rift in 30 seconds.",
+      "seconds": 1.888,
+      "sha256": "27f7d47c68d88e8d5e844e6092d6875bfea23792b82529178251ceb5b0ee57bc"
+    },
+    "silas/rift-window.ogg": {
+      "text": "The unstable rift window is open.",
+      "seconds": 1.833,
+      "sha256": "76d0551881f426e11583ee7e979d6f24539bc7e950284281c45c3d1c46a59bd5"
+    },
+    "silas/rift-window-soon.ogg": {
+      "text": "Unstable rift window opens soon.",
+      "seconds": 1.814,
+      "sha256": "89eb6edb8f122bf2fd70aa4d7b19076cb20c50a55f7b621d9df3b9b798af53a2"
+    },
+    "silas/rift-window-in-5.ogg": {
+      "text": "Unstable rift window opens in 5 seconds.",
+      "seconds": 2.635,
+      "sha256": "907236d691e77a38236832f88a274a2f86afcc7b86fadfce47fe5011acc79b10"
+    },
+    "silas/rift-window-in-15.ogg": {
+      "text": "Unstable rift window opens in 15 seconds.",
+      "seconds": 2.582,
+      "sha256": "bf1dd6ede1678807c54c8a4b0a77d4e87f73a3945418aed7a98e4157f41da02c"
+    },
+    "silas/rift-window-in-30.ogg": {
+      "text": "Unstable rift window opens in 30 seconds.",
+      "seconds": 2.582,
+      "sha256": "ad7b3695e42e497563eac6a0370ff5405f6ca4c725d30d2dd98adb7b0c324fe3"
+    },
+    "silas/boxes-ready.ogg": {
+      "text": "Boxes are ready.",
+      "seconds": 0.872,
+      "sha256": "700c057b9ff4ae3511c844f50ca5ceabc84820a3be13159163cbd3e0fcbf7d7b"
+    },
+    "silas/boxes-soon.ogg": {
+      "text": "Boxes will be ready soon.",
+      "seconds": 1.356,
+      "sha256": "ede093008b47a68a9e47060f6fef5dfb9c9ef5f310ea9f2e23c502a6f25ee711"
+    },
+    "silas/boxes-in-5.ogg": {
+      "text": "Boxes in 5 seconds.",
+      "seconds": 1.528,
+      "sha256": "0530f5cf4aaa00ae25bea491958168c87dc6260a74448cc9f8e06eb56f4fc661"
+    },
+    "silas/boxes-in-15.ogg": {
+      "text": "Boxes in 15 seconds.",
+      "seconds": 1.547,
+      "sha256": "daefc716640ac4440bc18f4cb48303b7696ce57b7ac9ce0464a33baed213a599"
+    },
+    "silas/boxes-in-30.ogg": {
+      "text": "Boxes in 30 seconds.",
+      "seconds": 1.389,
+      "sha256": "e6824040410fa27b6f05e156556ad431a74c23243873100bac8aee1c452a6504"
+    },
+    "silas/boxes-respawn.ogg": {
+      "text": "Boxes can respawn.",
+      "seconds": 1.118,
+      "sha256": "9802d23422c860a422fd32e36e45ab67dbe3dbbf4c2d1be1f4a09c83cf4c5ae1"
+    },
+    "silas/statues-ready.ogg": {
+      "text": "Golden statues are ready.",
+      "seconds": 1.508,
+      "sha256": "fb1a6ea911a1bfd77fbf69fcf52820616fa152b686f8e3791f053f6cc66682f6"
+    },
+    "silas/statues-soon.ogg": {
+      "text": "Golden statues will be ready soon.",
+      "seconds": 1.987,
+      "sha256": "179535d35b44673c76579d13a30db047e6b7f0dfe56530dc8128933386071ef2"
+    },
+    "silas/statues-in-5.ogg": {
+      "text": "Golden statues in 5 seconds.",
+      "seconds": 1.943,
+      "sha256": "3d6cfdf7689b4d266a053dcd45528ec6e8b04dca682e1a2be826272ef15146e9"
+    },
+    "silas/statues-in-15.ogg": {
+      "text": "Golden statues in 15 seconds.",
+      "seconds": 2.017,
+      "sha256": "d328e8569e9dce553b98c72235b1985ce6b96f1b3052df11065adf4e6aeec24d"
+    },
+    "silas/statues-in-30.ogg": {
+      "text": "Golden statues in 30 seconds.",
+      "seconds": 1.968,
+      "sha256": "107132bcd6fe956233e0eb0555f026c1f3d769b51fbfdbc14f5ced146539c1bd"
+    },
+    "silas/statues-respawn.ogg": {
+      "text": "Golden statues can respawn.",
+      "seconds": 1.674,
+      "sha256": "e10430e33d5bc11d63af3b49218c563cf38c4f096aa662474092b8b04ed0b620"
+    },
+    "june/small-ready.ogg": {
+      "text": "Small camp is ready.",
+      "seconds": 1.225,
+      "sha256": "82494f43413db476b8261b1f6e31fc34ca41b1fe94a8f31b1aa7634d5355c998"
+    },
+    "june/small-soon.ogg": {
+      "text": "Small camp will be ready soon.",
+      "seconds": 1.724,
+      "sha256": "77cf698bed4a98300559941fa6925ccaa8b09b441acf2864e819a5ba2cc94af0"
+    },
+    "june/small-in-5.ogg": {
+      "text": "Small camp in 5 seconds.",
+      "seconds": 1.698,
+      "sha256": "fc52c1f65c8b475b1f6ccd9b31e310efb45eff002d3c89d9713a22aca4a1f5da"
+    },
+    "june/small-in-15.ogg": {
+      "text": "Small camp in 15 seconds.",
+      "seconds": 1.802,
+      "sha256": "91d0646cbe651a3f3e8daf847caf1b31cab485c5a614ae0f106f673e19bed884"
+    },
+    "june/small-in-30.ogg": {
+      "text": "Small camp in 30 seconds.",
+      "seconds": 1.677,
+      "sha256": "3c81e283bf0f0e74832efbd89cdb4d88b4f4fd0bfb0ec70e3ba9cf26d33909dc"
+    },
+    "june/medium-ready.ogg": {
+      "text": "Medium camp is ready.",
+      "seconds": 1.237,
+      "sha256": "889f0b41f2cc6aa20dcb72c498e3c1682e86eb7664707b3cf735aac668e19a5b"
+    },
+    "june/medium-soon.ogg": {
+      "text": "Medium camp will be ready soon.",
+      "seconds": 1.682,
+      "sha256": "efa8f5ab4c20ad7c8036cdb2d68962d565ef61b707b436f0fbef948c83e2c7f2"
+    },
+    "june/medium-in-5.ogg": {
+      "text": "Medium camp in 5 seconds.",
+      "seconds": 1.68,
+      "sha256": "8dede4e83bbfc6fb889a319923fe6ff093e09441ec470a246ae642c2cd9ca8b3"
+    },
+    "june/medium-in-15.ogg": {
+      "text": "Medium camp in 15 seconds.",
+      "seconds": 1.758,
+      "sha256": "6d5a84cc5c15611bbd85a4824e9d4134f7a3f09d801ce66c64aecf1ae28eff57"
+    },
+    "june/medium-in-30.ogg": {
+      "text": "Medium camp in 30 seconds.",
+      "seconds": 1.679,
+      "sha256": "2ad98a18bc38fae9a77f07aa563f9dd1913274761f761d739f3a2fc27ef0e89c"
+    },
+    "june/large-ready.ogg": {
+      "text": "Large camp is ready.",
+      "seconds": 1.148,
+      "sha256": "44b3ee5c6e7e5e19369e1ddaccdcc67345fbbb8690745c9db39404664db1e476"
+    },
+    "june/large-soon.ogg": {
+      "text": "Large camp will be ready soon.",
+      "seconds": 1.629,
+      "sha256": "1239cf412541dc59fbe3803df804546f525747173828217c095ea800a459e21c"
+    },
+    "june/large-in-5.ogg": {
+      "text": "Large camp in 5 seconds.",
+      "seconds": 1.608,
+      "sha256": "3911b94189f4c5447418bfc75f3abb5f42884ebcf274648c2edb4d07ab7759b2"
+    },
+    "june/large-in-15.ogg": {
+      "text": "Large camp in 15 seconds.",
+      "seconds": 1.752,
+      "sha256": "571e7e1c9502ebe4f63b328bc5afd38ee4c8d22c3cd00306b8f5fbdad2d9220b"
+    },
+    "june/large-in-30.ogg": {
+      "text": "Large camp in 30 seconds.",
+      "seconds": 1.621,
+      "sha256": "a7bffc93bfa5568c7f73a72254c991b16c2048616748801e63e1ef0a6a6e0922"
+    },
+    "june/breakables-ready.ogg": {
+      "text": "Boxes and statues are ready.",
+      "seconds": 1.578,
+      "sha256": "4003e158a480cac1e5feea2463bd6b083d584b7277ad9cc642df02591d90d46f"
+    },
+    "june/breakables-soon.ogg": {
+      "text": "Boxes and statues will be ready soon.",
+      "seconds": 2.02,
+      "sha256": "3bfe03118d99b84be3b1acbcc41ee2ca4c7ed40f930a3ccbc7c8f43f84b58c04"
+    },
+    "june/breakables-in-5.ogg": {
+      "text": "Boxes and statues in 5 seconds.",
+      "seconds": 1.956,
+      "sha256": "7141f2d2d130c1ed2a6aaa08f2c4bb0da2ebfbc9f89739906090b153f88dbb21"
+    },
+    "june/breakables-in-15.ogg": {
+      "text": "Boxes and statues in 15 seconds.",
+      "seconds": 2.086,
+      "sha256": "1ec4a79c8fd29fd250cb398d566465fb2b0046d5ca5ea040a334e82abf934937"
+    },
+    "june/breakables-in-30.ogg": {
+      "text": "Boxes and statues in 30 seconds.",
+      "seconds": 2.02,
+      "sha256": "d71c30cfcc8f22898c7849eda92ee80eb66c2a631261b72b4f7fdb1b62fcfc5e"
+    },
+    "june/breakables-respawn.ogg": {
+      "text": "Boxes and statues can respawn.",
+      "seconds": 1.763,
+      "sha256": "3df622cd05e375e8f27cf18bd1a28d7185ebe63e01212f79ae82ec2a9be672ff"
+    },
+    "june/bridge-ready.ogg": {
+      "text": "Bridge buffs are ready.",
+      "seconds": 1.224,
+      "sha256": "6c58942b5d50d9ca341ed62af39f3692702430bd3dc93599d9f58407e527f8c8"
+    },
+    "june/bridge-soon.ogg": {
+      "text": "Bridge buffs will be ready soon.",
+      "seconds": 1.678,
+      "sha256": "f855c0fd8e161595b9f8cd93dfbb2ea88f264339e48512dbe5c3c04c2ce1d9be"
+    },
+    "june/bridge-in-5.ogg": {
+      "text": "Bridge buffs in 5 seconds.",
+      "seconds": 1.617,
+      "sha256": "ecdd09c8c3fc0d3a360157c53211a14f5e8966c4651fde6581585c9848e0e307"
+    },
+    "june/bridge-in-15.ogg": {
+      "text": "Bridge buffs in 15 seconds.",
+      "seconds": 1.759,
+      "sha256": "c0fb36ff8dcc7f8c5f514e11871a894a46f57717f86b160ee95e0a0b762756c6"
+    },
+    "june/bridge-in-30.ogg": {
+      "text": "Bridge buffs in 30 seconds.",
+      "seconds": 1.651,
+      "sha256": "1f0f05ebc8760bfed1d45b0d7cee4d6678a66bb6588502fa0e2fd4f2b31532ac"
+    },
+    "june/urn-ready.ogg": {
+      "text": "Soul urn is ready.",
+      "seconds": 1.134,
+      "sha256": "24ca027bac846c8d4e9e3921f8e2ea8f63b6560953c2a99622d21ae3bdf6ee58"
+    },
+    "june/urn-soon.ogg": {
+      "text": "Soul urn will be ready soon.",
+      "seconds": 1.659,
+      "sha256": "7352f8a40f25c03531c18e50b1964bff8deb1d97c731da935ed3b6810eea5d0b"
+    },
+    "june/urn-in-5.ogg": {
+      "text": "Soul urn in 5 seconds.",
+      "seconds": 1.553,
+      "sha256": "e5b9313d1c9566d7009e58f2a93ea6d52fec6fdfa2d593fd0d173883aa32b448"
+    },
+    "june/urn-in-15.ogg": {
+      "text": "Soul urn in 15 seconds.",
+      "seconds": 1.669,
+      "sha256": "38183ff85c3f409303b0617226d48f8bfeacd5459fb66dfbf1977d37af90afef"
+    },
+    "june/urn-in-30.ogg": {
+      "text": "Soul urn in 30 seconds.",
+      "seconds": 1.532,
+      "sha256": "d63cfcc219ede144f707164c41c6b3a68fe3fb3533d4876761b2de93fca89465"
+    },
+    "june/rift-ready.ogg": {
+      "text": "Unstable rift is ready.",
+      "seconds": 1.392,
+      "sha256": "b38e0cad83b958d0f9a2f7cfff73afc96613201c63eaab0191870a98125f6eb0"
+    },
+    "june/rift-soon.ogg": {
+      "text": "Unstable rift will be ready soon.",
+      "seconds": 1.84,
+      "sha256": "9e0a9c872052310b323a158b273380438d87cc6b54415a29543bc2708fc45a3a"
+    },
+    "june/rift-in-5.ogg": {
+      "text": "Unstable rift in 5 seconds.",
+      "seconds": 1.777,
+      "sha256": "539e35b8c94701eda75af7a96e44564fe763b4519499ea38323a7d2cb08c6672"
+    },
+    "june/rift-in-15.ogg": {
+      "text": "Unstable rift in 15 seconds.",
+      "seconds": 1.926,
+      "sha256": "af68fbd53c2ee3a167b903f10a1d573b7adb20046a53ce67f072c54f3919804e"
+    },
+    "june/rift-in-30.ogg": {
+      "text": "Unstable rift in 30 seconds.",
+      "seconds": 1.868,
+      "sha256": "3a5a12cd6995f624f832317275e7bada7bafc03cb793ea8e17151e1169c17cb1"
+    },
+    "june/rift-window.ogg": {
+      "text": "The unstable rift window is open.",
+      "seconds": 1.89,
+      "sha256": "0efa9d12e22ebb30dc7bc6ba1d96e6ceb8f7c92a0be82088805c031c06cd78cc"
+    },
+    "june/rift-window-soon.ogg": {
+      "text": "Unstable rift window opens soon.",
+      "seconds": 1.654,
+      "sha256": "a10cbcf4e4abe15b2a6b3247e6f4f96160478f4cb24987030698a9188faf4311"
+    },
+    "june/rift-window-in-5.ogg": {
+      "text": "Unstable rift window opens in 5 seconds.",
+      "seconds": 2.376,
+      "sha256": "dec2584b19b9f2aafb69fe328998077b096cd3c8da516a570706e65addf69119"
+    },
+    "june/rift-window-in-15.ogg": {
+      "text": "Unstable rift window opens in 15 seconds.",
+      "seconds": 2.629,
+      "sha256": "ac72e4b25ce6a3008f2e836a81ca5e6d795591725915909896aff1b78a2af3d8"
+    },
+    "june/rift-window-in-30.ogg": {
+      "text": "Unstable rift window opens in 30 seconds.",
+      "seconds": 2.578,
+      "sha256": "e944d5045026ff881bb823f01a68611fb3dd73555736959832fe385d6fd983b8"
+    },
+    "june/boxes-ready.ogg": {
+      "text": "Boxes are ready.",
+      "seconds": 0.936,
+      "sha256": "5b5c402cb4072b3e0c2abfa044594170bc9feddc1af4d4349e91958e89bcfecc"
+    },
+    "june/boxes-soon.ogg": {
+      "text": "Boxes will be ready soon.",
+      "seconds": 1.355,
+      "sha256": "199e7f60a1d74821a8ca034de2b074af81054b917df346654ef013c0fea8175c"
+    },
+    "june/boxes-in-5.ogg": {
+      "text": "Boxes in 5 seconds.",
+      "seconds": 1.44,
+      "sha256": "5c94113870c4a66f281f5fd177899cbffb27961c8bf40761342639a79b9e3c4d"
+    },
+    "june/boxes-in-15.ogg": {
+      "text": "Boxes in 15 seconds.",
+      "seconds": 1.564,
+      "sha256": "404e8634eabcae96916ee80c5d815d3ccc47d9ea5e154d2604417d96c8bf49a5"
+    },
+    "june/boxes-in-30.ogg": {
+      "text": "Boxes in 30 seconds.",
+      "seconds": 1.41,
+      "sha256": "3a24ee4a2af1ee2d0e74d8cbe0cdb3b0b15a3669b36630fd6cc74db01546ac36"
+    },
+    "june/boxes-respawn.ogg": {
+      "text": "Boxes can respawn.",
+      "seconds": 1.165,
+      "sha256": "e46d7968f7dd72fa33dde28a0431a4364cfc83007bf4297491efa5dd4730f452"
+    },
+    "june/statues-ready.ogg": {
+      "text": "Golden statues are ready.",
+      "seconds": 1.451,
+      "sha256": "a41cb3807513f28ca6ca0fba120b48a363395adab43c4744666b7c4556dea47b"
+    },
+    "june/statues-soon.ogg": {
+      "text": "Golden statues will be ready soon.",
+      "seconds": 1.944,
+      "sha256": "bbb65c780ef7605d0d11d253f89f9c7b620bf5ef8be968b8e6a73a617a2d7e3e"
+    },
+    "june/statues-in-5.ogg": {
+      "text": "Golden statues in 5 seconds.",
+      "seconds": 1.758,
+      "sha256": "7d54b8f38b3bc9047fae0a0749d3b76bc1b5504cb96d8ac337a0dd0bde8ec9de"
+    },
+    "june/statues-in-15.ogg": {
+      "text": "Golden statues in 15 seconds.",
+      "seconds": 2.106,
+      "sha256": "d9335cf00e539cd1958f4b60ba9eacba95298ee44d39dec10c1afcfac7f4e4aa"
+    },
+    "june/statues-in-30.ogg": {
+      "text": "Golden statues in 30 seconds.",
+      "seconds": 1.944,
+      "sha256": "edc3798611e080b5cca9097cfcc5426e4a25cb9bc2953c9fb6ecbfa7938abbd5"
+    },
+    "june/statues-respawn.ogg": {
+      "text": "Golden statues can respawn.",
+      "seconds": 1.663,
+      "sha256": "46c624435c423d1335ff0a141436427e99199a95c1ae70e660fe03cf96c26cb9"
+    },
+    "broker/small-ready.ogg": {
+      "text": "Small camp is ready.",
+      "seconds": 1.173,
+      "sha256": "8910f518a40706ef0dcad58e8719c7fd2320526b1ec0e4a7a7b8d8bec5ec7042"
+    },
+    "broker/small-soon.ogg": {
+      "text": "Small camp will be ready soon.",
+      "seconds": 1.437,
+      "sha256": "340721d04950137662247c11119a2a67c7c6af51a81f5b01e73e0ffbd5239ab6"
+    },
+    "broker/small-in-5.ogg": {
+      "text": "Small camp in 5 seconds.",
+      "seconds": 1.389,
+      "sha256": "a657b2e75a48c3d8e76080babc7fc73c11156861398ff7120c3e06e83b9e031d"
+    },
+    "broker/small-in-15.ogg": {
+      "text": "Small camp in 15 seconds.",
+      "seconds": 1.642,
+      "sha256": "baa4f8f7b958024076bba739c1c45035b4e4b3c03e627d5330e2e11dfd410171"
+    },
+    "broker/small-in-30.ogg": {
+      "text": "Small camp in 30 seconds.",
+      "seconds": 1.541,
+      "sha256": "302dcb1e7e7f36d4674b9a5d9980484655e8789fc14d4b6f1d83fd56b6227c3d"
+    },
+    "broker/medium-ready.ogg": {
+      "text": "Medium camp is ready.",
+      "seconds": 1.155,
+      "sha256": "f33d3854f618618a3e0bb5650d717742d3ca88e2fe14acaa3b0615baf6eb364b"
+    },
+    "broker/medium-soon.ogg": {
+      "text": "Medium camp will be ready soon.",
+      "seconds": 1.419,
+      "sha256": "b75a669020341ebf137cb08b2c8f817b99cd2c5fa7e3d4082e6ebbcbcd57a506"
+    },
+    "broker/medium-in-5.ogg": {
+      "text": "Medium camp in 5 seconds.",
+      "seconds": 1.479,
+      "sha256": "8ecee076fc74e40e1aed822ae7a63769e1466642ab59cc3c8958caaab38acd9f"
+    },
+    "broker/medium-in-15.ogg": {
+      "text": "Medium camp in 15 seconds.",
+      "seconds": 1.608,
+      "sha256": "fbd503d16ad65302eb83545b9e6d6a70444453a05cefced3da7701cf09dc7c9c"
+    },
+    "broker/medium-in-30.ogg": {
+      "text": "Medium camp in 30 seconds.",
+      "seconds": 1.487,
+      "sha256": "822ded11768410f0d43b502a7e110d480c469f0c05c40f47c3df8abda7fb0786"
+    },
+    "broker/large-ready.ogg": {
+      "text": "Large camp is ready.",
+      "seconds": 1.119,
+      "sha256": "b064f64d3c56cfe8cbd722c41d4c8fbfa688be4711254a54b2904bb99249ea51"
+    },
+    "broker/large-soon.ogg": {
+      "text": "Large camp will be ready soon.",
+      "seconds": 1.415,
+      "sha256": "32f111c6161258e8e60ede96a592b52e1f05c9fadb7240f2e9f63e9f2ad76a07"
+    },
+    "broker/large-in-5.ogg": {
+      "text": "Large camp in 5 seconds.",
+      "seconds": 1.431,
+      "sha256": "f577cb54ae35765e970183efc23a8d9e7214729b999ce91b85c1a50811c96ffd"
+    },
+    "broker/large-in-15.ogg": {
+      "text": "Large camp in 15 seconds.",
+      "seconds": 1.487,
+      "sha256": "2b869fe873507fc293679d2dbb41fb2dca6fef8ba9c72609ff2dece97b88d362"
+    },
+    "broker/large-in-30.ogg": {
+      "text": "Large camp in 30 seconds.",
+      "seconds": 1.367,
+      "sha256": "c632d1ba4dab45288d733e303ec9b4a11c7e582173e62b43f3ab3bd864b722b1"
+    },
+    "broker/breakables-ready.ogg": {
+      "text": "Boxes and statues are ready.",
+      "seconds": 1.324,
+      "sha256": "6d97a1f45b25222048ab31d0e2e0ab819339aa5d84410169998128ba1704d892"
+    },
+    "broker/breakables-soon.ogg": {
+      "text": "Boxes and statues will be ready soon.",
+      "seconds": 1.935,
+      "sha256": "ebe686e4fef816bfafd8870e28af287754cdcdfd3d344214f7dd985c95f6ea01"
+    },
+    "broker/breakables-in-5.ogg": {
+      "text": "Boxes and statues in 5 seconds.",
+      "seconds": 1.772,
+      "sha256": "d17ce283e4087096569329f01b49b2bcc7cda8f48c3d82e1d3b08cb89a67e96b"
+    },
+    "broker/breakables-in-15.ogg": {
+      "text": "Boxes and statues in 15 seconds.",
+      "seconds": 1.833,
+      "sha256": "0572ab1a689079c4eb00825fb99a2715e53303e42fc2652e7bc1c4d3dcfa8079"
+    },
+    "broker/breakables-in-30.ogg": {
+      "text": "Boxes and statues in 30 seconds.",
+      "seconds": 1.818,
+      "sha256": "1d7fe9af6eeac9f326e094946c728fcf6c924631ab4c5fbee7e484f1abf809e9"
+    },
+    "broker/breakables-respawn.ogg": {
+      "text": "Boxes and statues can respawn.",
+      "seconds": 1.495,
+      "sha256": "a74ceed8ec13b54790a08406aeebfc24ca5b5104ca2c1e5ee762374564dc4c8a"
+    },
+    "broker/bridge-ready.ogg": {
+      "text": "Bridge buffs are ready.",
+      "seconds": 0.844,
+      "sha256": "2dea6fcf47a0f80cc208b14ec97411c4e43753819f0ac0c17e8dd81dc5b7cbc3"
+    },
+    "broker/bridge-soon.ogg": {
+      "text": "Bridge buffs will be ready soon.",
+      "seconds": 1.32,
+      "sha256": "7a1cd15d81bf3f3e2ca972e6d2aa57e7967587a02648e8e180c97ee45db5687a"
+    },
+    "broker/bridge-in-5.ogg": {
+      "text": "Bridge buffs in 5 seconds.",
+      "seconds": 1.514,
+      "sha256": "517e642713aa3b798133281001c13862fdaa8854fd0e1129ecb038ec7d232286"
+    },
+    "broker/bridge-in-15.ogg": {
+      "text": "Bridge buffs in 15 seconds.",
+      "seconds": 1.534,
+      "sha256": "0c614454825441c399bee8fd72aaa96bf5a300bebbc78a4ca595ebac1c36ed37"
+    },
+    "broker/bridge-in-30.ogg": {
+      "text": "Bridge buffs in 30 seconds.",
+      "seconds": 1.449,
+      "sha256": "22c237cb8a5a2949b6aeb63c28cf6fe68b137d538d91a84f2974b1fa252b69ed"
+    },
+    "broker/urn-ready.ogg": {
+      "text": "Soul urn is ready.",
+      "seconds": 0.933,
+      "sha256": "21b965a9cfc2897e47d73ad0d4f16d726148e2338ba16d65d1e4b31c749d37c6"
+    },
+    "broker/urn-soon.ogg": {
+      "text": "Soul urn will be ready soon.",
+      "seconds": 1.324,
+      "sha256": "2375f4ee850226f5eb54b16c03f119a04f4df54ae39762ddf3c8e819bcaa2acc"
+    },
+    "broker/urn-in-5.ogg": {
+      "text": "Soul urn in 5 seconds.",
+      "seconds": 1.335,
+      "sha256": "c334ef8a657ae1a852197968c0ec0ddb3db64fee20326589494f9e473fe70d19"
+    },
+    "broker/urn-in-15.ogg": {
+      "text": "Soul urn in 15 seconds.",
+      "seconds": 1.356,
+      "sha256": "3713752eb9dc8f93a280e3a17661c3715a179e0f18a8ffe850a974037939ecfe"
+    },
+    "broker/urn-in-30.ogg": {
+      "text": "Soul urn in 30 seconds.",
+      "seconds": 1.397,
+      "sha256": "cd98116d43b41b14750eb7a1dbb94ad6d69d3469c641dc1cf4e52e000218d14c"
+    },
+    "broker/rift-ready.ogg": {
+      "text": "Unstable rift is ready.",
+      "seconds": 1.243,
+      "sha256": "dfd8d7f768825958c63dd846cb11bc90e7f2e6ab545de8a3504565feba0e8168"
+    },
+    "broker/rift-soon.ogg": {
+      "text": "Unstable rift will be ready soon.",
+      "seconds": 1.699,
+      "sha256": "657db5180a6759c38e4fc652cf5135bb5f0e02ea073b0220da5266473d0884d9"
+    },
+    "broker/rift-in-5.ogg": {
+      "text": "Unstable rift in 5 seconds.",
+      "seconds": 1.609,
+      "sha256": "19ae9dab61ada00cd9a27334a1e88abe24d7be23f8f34630e6d6d480525df1b6"
+    },
+    "broker/rift-in-15.ogg": {
+      "text": "Unstable rift in 15 seconds.",
+      "seconds": 1.572,
+      "sha256": "e4f00792558352ba7b0a5ff36a5e08a14bf3c471a7f8f7d9e02b4e7da4b90d97"
+    },
+    "broker/rift-in-30.ogg": {
+      "text": "Unstable rift in 30 seconds.",
+      "seconds": 1.702,
+      "sha256": "2ee4de9044f86b5dec97b7a0036490f32b5c70675f149b7dd6df077b680944f6"
+    },
+    "broker/rift-window.ogg": {
+      "text": "The unstable rift window is open.",
+      "seconds": 1.711,
+      "sha256": "d677652883df0f54e93cd2255947baf786d24f9384e8e3b99343a46b5bff9068"
+    },
+    "broker/rift-window-soon.ogg": {
+      "text": "Unstable rift window opens soon.",
+      "seconds": 1.47,
+      "sha256": "4005d2493e9750fd1b44ff5eb1f0a8c56c12de063399d875c5f8ab6b86b2d046"
+    },
+    "broker/rift-window-in-5.ogg": {
+      "text": "Unstable rift window opens in 5 seconds.",
+      "seconds": 2.163,
+      "sha256": "a441acbd16515e6aad435dce75416ea58f5dc9cdc6729fbfae2e0e1c83d79983"
+    },
+    "broker/rift-window-in-15.ogg": {
+      "text": "Unstable rift window opens in 15 seconds.",
+      "seconds": 2.419,
+      "sha256": "113561a78ea1c42f65e5f5b749da251788878ebfe5833d3ade76542005d6a8cb"
+    },
+    "broker/rift-window-in-30.ogg": {
+      "text": "Unstable rift window opens in 30 seconds.",
+      "seconds": 2.52,
+      "sha256": "5989d18aedd948417c971c5bd680ce980b3449927311b3f8c761e8db98eededa"
+    },
+    "broker/boxes-ready.ogg": {
+      "text": "Boxes are ready.",
+      "seconds": 0.682,
+      "sha256": "203456a15b9d5ae25556e009cde6d8095c96d47612b777770c1510ac1aa94986"
+    },
+    "broker/boxes-soon.ogg": {
+      "text": "Boxes will be ready soon.",
+      "seconds": 1.228,
+      "sha256": "416f4b4163c777bad639f3ba2549105c36da49b7c340a6753523c6a8d7630657"
+    },
+    "broker/boxes-in-5.ogg": {
+      "text": "Boxes in 5 seconds.",
+      "seconds": 1.209,
+      "sha256": "ba5df5893d5071c8ed9d45191dfb9385b5674282abb534c804170935991c71ab"
+    },
+    "broker/boxes-in-15.ogg": {
+      "text": "Boxes in 15 seconds.",
+      "seconds": 1.331,
+      "sha256": "db57375855d09d36ed07729349bfb71d4f82d39f76aae49ee24a7fd28ddc5941"
+    },
+    "broker/boxes-in-30.ogg": {
+      "text": "Boxes in 30 seconds.",
+      "seconds": 1.19,
+      "sha256": "2cdff6a250cbd9363fd760e84b901fc480399ba93f25839d749b77969631bf75"
+    },
+    "broker/boxes-respawn.ogg": {
+      "text": "Boxes can respawn.",
+      "seconds": 0.945,
+      "sha256": "35cd0c1206183bd1b4bb6c761fd4e41e7019f2118ebf26f7b5213811a5c6571c"
+    },
+    "broker/statues-ready.ogg": {
+      "text": "Golden statues are ready.",
+      "seconds": 1.158,
+      "sha256": "8616105763e66c3c6bbc47f305b1d6ad6a7267ddc71b999f07be40bd8199c9e3"
+    },
+    "broker/statues-soon.ogg": {
+      "text": "Golden statues will be ready soon.",
+      "seconds": 1.716,
+      "sha256": "a6e9c56bec9571e34b025b9491b896245b81474c38fe43a691fc231f99af5ca7"
+    },
+    "broker/statues-in-5.ogg": {
+      "text": "Golden statues in 5 seconds.",
+      "seconds": 1.733,
+      "sha256": "1f021775ec1f038d8723d649f2c1dcd10f5542e449b0649c71cb35f5f28b8dc4"
+    },
+    "broker/statues-in-15.ogg": {
+      "text": "Golden statues in 15 seconds.",
+      "seconds": 1.843,
+      "sha256": "08e5640e1d65e82833746421c94e187392837490b1fc9d61538e8a81ee24a69e"
+    },
+    "broker/statues-in-30.ogg": {
+      "text": "Golden statues in 30 seconds.",
+      "seconds": 1.719,
+      "sha256": "1384607d5b8b9fb959115b4b26ba5f79a6f21350ca7a62b47967885554e736a0"
+    },
+    "broker/statues-respawn.ogg": {
+      "text": "Golden statues can respawn.",
+      "seconds": 1.621,
+      "sha256": "a22c7c29f8a235aa574ac1453fed46ea5d62cc972c9090f06336db09b59d887b"
     }
   }
 }

@@ -1,3 +1,4 @@
+import { DeadlockArt, heroArtwork } from "./DeadlockArt";
 import { useEffect, useRef, useState } from "react";
 import { type Match, type Hero, gameModeName, outcome } from "../core/api";
 import {
@@ -132,18 +133,10 @@ export function PerformanceRating({
       </div>
       <div className="rating-summary">
         <div className="rating-badge" data-tier={badge.tier}>
-          <svg className="rank-emblem" viewBox="0 0 100 100" aria-hidden="true">
-            <path
-              d="M50 5 85 25 85 70 50 95 15 70 15 25Z M50 16 75 31 75 64 50 82 25 64 25 31Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="m50 27 7 16 18 7-18 7-7 16-7-16-18-7 18-7Z"
-              fill="currentColor"
-            />
-          </svg>
+          <DeadlockArt
+            name={`rank-${ready || last ? badge.tier : 0}.webp`}
+            className="rank-emblem"
+          />
           <strong>{ready || last ? badge.label : "Obscurus"}</strong>
           <span>
             {ready
@@ -196,7 +189,12 @@ export function PerformanceRating({
         </p>
       )}
       {ready && (
-        <div className="coaching-grid">
+        <div
+          className="strength-chart"
+          role="group"
+          aria-label="Hero-adjusted performance strengths"
+        >
+          <p>Hero-adjusted strengths · performance index, 0–100</p>
           {(
             [
               ["Survival", rating.overall.survival],
@@ -205,10 +203,11 @@ export function PerformanceRating({
               ["Economy", rating.overall.economy],
             ] as [string, number][]
           ).map(([label, value]) => (
-            <article className="coaching-card" key={label}>
-              <small>{label}</small>
-              <strong>{value.toFixed(0)}/100</strong>
-            </article>
+            <div className="strength-row" key={label}>
+              <span>{label}</span>
+              <meter min={0} max={100} value={value} aria-label={label} />
+              <strong>{value.toFixed(0)}</strong>
+            </div>
           ))}
         </div>
       )}
@@ -224,6 +223,10 @@ export function PerformanceRating({
         <div className="top-hero-grid">
           {heroRating.heroes.slice(0, 3).map((h, i) => (
             <article className="top-hero-card" key={h.heroId}>
+              <DeadlockArt
+                name={heroArtwork(name(h.heroId))}
+                className="top-hero-portrait"
+              />
               <span>
                 #{i + 1} · {name(h.heroId)}
               </span>

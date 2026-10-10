@@ -46,7 +46,7 @@ async function observeAudio(page: Page) {
   });
 }
 
-test("three bundled voices actually play, preserve pitch at speed, and persist alongside sound choices", async ({
+test("six bundled voices actually play, preserve pitch at speed, and persist alongside sound choices", async ({
   page,
 }) => {
   await observeAudio(page);
@@ -58,13 +58,34 @@ test("three bundled voices actually play, preserve pitch at speed, and persist a
   await expect(
     page.getByRole("heading", { name: "Golden statues", exact: true }),
   ).toHaveCount(0);
+  await expect(page.locator(".rule-icon img")).toHaveCount(7);
+  await expect
+    .poll(() =>
+      page
+        .locator(".rule-icon img")
+        .evaluateAll((images) =>
+          images.every(
+            (image) =>
+              (image as HTMLImageElement).complete &&
+              (image as HTMLImageElement).naturalWidth > 0,
+          ),
+        ),
+    )
+    .toBe(true);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(
     page.getByLabel("Notification sound").locator("option"),
   ).toHaveCount(7);
   await page.getByLabel("Notification sound").selectOption("radio");
   await page.getByLabel("Alert speed", { exact: true }).selectOption("1.75");
-  for (const voice of ["am_michael", "af_heart", "bf_emma"]) {
+  for (const voice of [
+    "silas",
+    "june",
+    "broker",
+    "am_michael",
+    "af_heart",
+    "bf_emma",
+  ]) {
     await page
       .getByLabel("Voice", { exact: true })
       .selectOption(`pack:${voice}`);
@@ -87,6 +108,8 @@ test("three bundled voices actually play, preserve pitch at speed, and persist a
     "pack:bf_emma",
   );
   await expect(page.getByLabel("Alert speed")).toHaveValue("1.75");
+  await page.getByRole("button", { name: "Natural pace · 1×" }).click();
+  await expect(page.getByLabel("Alert speed")).toHaveValue("1");
 });
 
 test("system voices still preview and custom text falls back from a bundled voice", async ({

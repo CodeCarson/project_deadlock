@@ -2811,7 +2811,8 @@ main {
       #09161666 62%,
       #09161611 100%
     ),
-    url("./assets/cursed-apple.png") center 46% / cover;
+    url("/deadlock/hero-infernus.png") right 8% bottom / auto 95% no-repeat,
+    radial-gradient(ellipse at right, #544537 0%, #14241d 65%);
   overflow: hidden;
 }
 .page-heading::after {
@@ -3346,4 +3347,272 @@ progress::-webkit-progress-value {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Actual game marks and the weapon / vitality / spirit palette. */
+.deadlock-art {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.brand .deadlock-wordmark {
+  width: 162px;
+  height: 38px;
+  display: block;
+  filter: brightness(0) invert(91%) sepia(17%) saturate(371%);
+}
+.brand-mark {
+  transform: none;
+  border: 0;
+  background: none;
+  width: 36px;
+  height: 36px;
+}
+.brand-mark .deadlock-art {
+  width: 34px;
+  height: 34px;
+}
+.nav-item .deadlock-art {
+  width: 22px;
+  height: 22px;
+}
+.rule-icon .deadlock-art {
+  width: 32px;
+  height: 32px;
+}
+.rank-emblem.deadlock-art {
+  height: 120px;
+  width: 120px;
+  filter: drop-shadow(0 4px 14px #0008);
+}
+.rating-badge {
+  background: radial-gradient(ellipse at top, #2c3228, #0a1717 75%);
+}
+.strength-chart {
+  margin: 20px 0;
+  padding: 18px;
+  background: #071412;
+  border: 1px solid var(--line);
+}
+.strength-chart > p {
+  margin-top: 0;
+  color: var(--muted);
+}
+.strength-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 35px;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.strength-row meter {
+  width: 100%;
+  height: 16px;
+  accent-color: #b4ce98;
+}
+.strength-row meter::-webkit-meter-bar {
+  background: #2d3931;
+  border: 0;
+}
+.strength-row meter::-webkit-meter-optimum-value {
+  background: linear-gradient(90deg, #759a85, #ccbc8c);
+}
+.hero-comparison {
+  margin: 22px 0;
+}
+.hero-comparison h3 {
+  margin: 0 0 6px;
+}
+.hero-comparison p {
+  font-size: 12px;
+  margin: 0;
+  color: var(--muted);
+}
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.comparison-row {
+  background: #081815;
+  border: 1px solid var(--line);
+  padding: 16px;
+}
+.comparison-row.focus {
+  border-color: #d6b47a99;
+  background: #d6b47a09;
+}
+.comparison-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-size: 12px;
+}
+.comparison-title small {
+  color: #d6b47a;
+}
+.comparison-row[data-direction="better"] .comparison-title small {
+  color: #b4ce98;
+}
+.comparison-bar {
+  display: grid;
+  grid-template-columns: 70px 1fr 55px;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  font-size: 11px;
+}
+.comparison-bar > div {
+  background: #d7c6a311;
+  height: 10px;
+}
+.comparison-bar i {
+  display: block;
+  height: 100%;
+  background: #ddad72;
+}
+.comparison-row[data-direction="better"] .comparison-bar:not(.reference) i {
+  background: #a4c591;
+}
+.comparison-bar.reference i {
+  background: #a0b4bf;
+}
+.comparison-bar b {
+  text-align: right;
+  font-weight: 500;
+}
+.comparison-source {
+  display: block;
+  color: var(--muted);
+  margin-top: 10px;
+  font-size: 10px;
+}
+.trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+.trend-card {
+  border: 1px solid var(--line);
+  padding: 20px;
+  background: #091815;
+}
+.trend-card[data-metric="deaths"] {
+  border-top: 2px solid #d9937e;
+}
+.trend-card[data-metric="combat"] {
+  border-top: 2px solid #bca0e2;
+}
+.trend-card[data-metric="farm"] {
+  border-top: 2px solid #b4ce98;
+}
+.trend-card[data-metric="economy"] {
+  border-top: 2px solid #dfb578;
+}
+.trend-value {
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
+  margin-top: 12px;
+}
+.trend-value strong {
+  font-family: Georgia, serif;
+  font-size: 32px;
+  font-weight: 400;
+}
+.trend-value span,
+.trend-card small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.trend-card small {
+  display: block;
+  margin-top: 8px;
+}
+.trend-card p {
+  margin: 8px 0;
+  font-size: 12px;
+}
+.trend-canvas {
+  height: 150px;
+  min-width: 0;
+  margin: 15px 0 8px;
+}
+.trend-method {
+  font-size: 11px;
+}
+.natural-pace {
+  margin: 0 0 12px;
+}
+@media (max-width: 650px) {
+  .comparison-grid,
+  .trend-grid {
+    grid-template-columns: 1fr;
+  }
+  .strength-row {
+    grid-template-columns: 100px 1fr 28px;
+    gap: 8px;
+  }
+  .brand .deadlock-wordmark {
+    width: 110px;
+    height: 26px;
+  }
+  .comparison-title {
+    flex-wrap: wrap;
+  }
+}
+
+.top-hero-card {
+  position: relative;
+  overflow: hidden;
+  padding-right: 80px;
+}
+.top-hero-portrait.deadlock-art {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  width: 85px;
+  height: 125px;
+  object-fit: contain;
+  object-position: bottom;
+  opacity: 0.85;
+}
+
+.death-timeline {
+  margin: 20px 0;
+}
+.death-rail {
+  height: 18px;
+  background: #a5bea21c;
+  position: relative;
+  border: 1px solid var(--line);
+}
+.death-rail i {
+  position: absolute;
+  height: 100%;
+  background: #d9937e;
+}
+.death-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.death-timeline small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.trend-evidence {
+  margin-top: 22px;
+}
+.trend-evidence > summary {
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
 }

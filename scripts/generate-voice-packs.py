@@ -41,9 +41,10 @@ for event in catalog["events"]:
         for warning in catalog["warnings"]:
             phrases[f"{key}-window-in-{warning}"] = f"{label} window in {warning} seconds."
 
-manifest = {"model": "Kokoro-82M v1.0 int8", "clips": {}}
+manifest = json.loads((root / "public/voices/manifest.json").read_text())
+manifest["model"] = "Kokoro-82M v1.0 int8 + Supertonic 3 int8"
 with tempfile.TemporaryDirectory() as scratch:
-    for voice in catalog["voices"]:
+    for voice in (v for v in catalog["voices"] if v.get("engine", "kokoro") == "kokoro"):
         config = sherpa_onnx.OfflineTtsConfig(
             model=sherpa_onnx.OfflineTtsModelConfig(
                 kokoro=sherpa_onnx.OfflineTtsKokoroModelConfig(

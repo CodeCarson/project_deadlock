@@ -1,43 +1,92 @@
 {
   "voices": [
     {
+      "id": "pack:silas",
+      "name": "Silas \u00b7 warm storyteller",
+      "engine": "supertonic3",
+      "speaker": 9,
+      "locale": "en"
+    },
+    {
+      "id": "pack:june",
+      "name": "June \u00b7 gentle and clear",
+      "engine": "supertonic3",
+      "speaker": 4,
+      "locale": "en"
+    },
+    {
+      "id": "pack:broker",
+      "name": "The Broker \u00b7 occult announcer",
+      "engine": "supertonic3",
+      "speaker": 6,
+      "locale": "en"
+    },
+    {
       "id": "pack:am_michael",
-      "name": "Michael · American male",
+      "name": "Michael \u00b7 American male",
       "speaker": 16,
-      "locale": "us"
+      "locale": "us",
+      "engine": "kokoro"
     },
     {
       "id": "pack:af_heart",
-      "name": "Heart · American female",
+      "name": "Heart \u00b7 American female",
       "speaker": 3,
-      "locale": "us"
+      "locale": "us",
+      "engine": "kokoro"
     },
     {
       "id": "pack:bf_emma",
-      "name": "Emma · British female",
+      "name": "Emma \u00b7 British female",
       "speaker": 21,
-      "locale": "gb"
+      "locale": "gb",
+      "engine": "kokoro"
     }
   ],
   "events": [
-    { "id": "small", "match": "Small camp", "spoken": "Small camp" },
-    { "id": "medium", "match": "Medium camp", "spoken": "Medium camp" },
-    { "id": "large", "match": "Large camp", "spoken": "Large camp" },
+    {
+      "id": "small",
+      "match": "Small camp",
+      "spoken": "Small camp"
+    },
+    {
+      "id": "medium",
+      "match": "Medium camp",
+      "spoken": "Medium camp"
+    },
+    {
+      "id": "large",
+      "match": "Large camp",
+      "spoken": "Large camp"
+    },
     {
       "id": "breakables",
       "match": "Boxes and statues",
       "spoken": "Boxes and statues",
       "respawn": true
     },
-    { "id": "bridge", "match": "Bridge buffs", "spoken": "Bridge buffs" },
-    { "id": "urn", "match": "Soul Urn", "spoken": "Soul urn" },
+    {
+      "id": "bridge",
+      "match": "Bridge buffs",
+      "spoken": "Bridge buffs"
+    },
+    {
+      "id": "urn",
+      "match": "Soul Urn",
+      "spoken": "Soul urn"
+    },
     {
       "id": "rift",
       "match": "Unstable Rift",
       "spoken": "Unstable rift",
       "window": true
     },
-    { "id": "boxes", "match": "Boxes", "spoken": "Boxes", "respawn": true },
+    {
+      "id": "boxes",
+      "match": "Boxes",
+      "spoken": "Boxes",
+      "respawn": true
+    },
     {
       "id": "statues",
       "match": "Golden statues",

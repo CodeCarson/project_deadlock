@@ -123,12 +123,17 @@ test("Steam-name suggestions require the chosen account and feed postgame review
     page.getByRole("heading", { name: "Selected player", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Stats", exact: true }).click();
-  await page
-    .locator(".stats-disclosure > summary")
-    .filter({ hasText: "Your improvement plan" })
-    .click();
+
   await expect(
     page.getByRole("heading", { name: "Improvement plan", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".trend-card")).toHaveCount(4);
+  await expect(page.locator(".trend-card").first()).toContainText("improving");
+  await expect(
+    page.getByRole("img", {
+      name: "Deaths / 10 min rolling trend",
+      exact: true,
+    }),
   ).toBeVisible();
   await page.getByLabel("Improvement target rate").fill("0.8");
   await page
@@ -139,6 +144,9 @@ test("Steam-name suggestions require the chosen account and feed postgame review
     .getByRole("button", { name: "Load detailed review", exact: true })
     .click();
   await expect(page.getByText("80%", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "Recorded deaths along the match clock" }),
+  ).toBeVisible();
   await expect(page.getByText("30%", { exact: true })).toBeVisible();
   await page
     .getByText("Item purchase timeline (1 recorded events)", { exact: true })
@@ -160,10 +168,7 @@ test("Steam-name suggestions require the chosen account and feed postgame review
   await expect(page.getByLabel("Match review note")).toHaveValue(
     "Check the exit before chasing after 15 minutes.",
   );
-  await page
-    .locator(".stats-disclosure > summary")
-    .filter({ hasText: "Your improvement plan" })
-    .click();
+
   await expect(page.getByText(/Active goal:.*at most/)).toBeVisible();
   await page.setViewportSize({ width: 650, height: 900 });
   await expect

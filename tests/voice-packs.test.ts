@@ -60,7 +60,7 @@ it("ships non-silent, checksum-verified recordings for every built-in alert and 
         (v) => manifest.clips[`${v.id.slice(5)}/bridge-ready.ogg`].sha256,
       ),
     ).size,
-  ).toBe(3);
+  ).toBe(6);
   expect(readFileSync(join(folder, "LICENSE-KOKORO.txt"), "utf8")).toContain(
     "Apache License",
   );
