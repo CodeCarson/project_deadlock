@@ -139,3 +139,42 @@ it("combines matching old breakable reminders and preserves intentionally differ
   base.rules[1].respawnSeconds = 241;
   expect(migrateSettings(base).rules).toHaveLength(3);
 });
+
+it("merges an enabled verified breakable with an unconfirmed disabled twin without rejecting saved research", () => {
+  const base = structuredClone(defaultSettings);
+  base.combinedBreakables = false;
+  const box = {
+    ...base.rules.find((r) => r.id === "boxes")!,
+    name: "Boxes",
+    confirmed: false,
+    enabled: false,
+    source: "",
+  };
+  const statue = {
+    ...box,
+    id: "statues",
+    name: "Golden statues",
+    confirmed: true,
+    enabled: true,
+    source: "Verified statue schedule",
+  };
+  base.rules = [box, statue, reminder];
+  base.playerResearch = {
+    "1234": {
+      expectedTotal: 506,
+      goal: null,
+      notes: [{ matchId: 123, text: "Keep this journal" }],
+      ratingHistory: [],
+    },
+  };
+  const migrated = migrateSettings(base);
+  expect(migrated.rules[0]).toMatchObject({
+    enabled: true,
+    confirmed: true,
+    source: "Verified statue schedule",
+    name: "Boxes & golden statues",
+  });
+  expect(migrated.playerResearch).toEqual(base.playerResearch);
+  expect(migrated.rules.at(-1)).toEqual(reminder);
+  expect(migrateSettings(migrated)).toEqual(migrated);
+});

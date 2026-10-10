@@ -18,6 +18,10 @@ export function migrateSettings(raw: unknown): Settings {
     const same =
       boxes &&
       statues &&
+      boxes.category === "breakable" &&
+      statues.category === "breakable" &&
+      ["Boxes", "Boxes & golden statues"].includes(boxes.name) &&
+      statues.name === "Golden statues" &&
       [
         "firstSpawn",
         "respawnSeconds",
@@ -40,8 +44,13 @@ export function migrateSettings(raw: unknown): Settings {
                 ...r,
                 name: "Boxes & golden statues",
                 enabled: same ? r.enabled || statues!.enabled : r.enabled,
+                source: same
+                  ? r.source.trim()
+                    ? r.source
+                    : statues!.source
+                  : r.source,
                 confirmed: same
-                  ? r.confirmed && statues!.confirmed
+                  ? r.confirmed || statues!.confirmed
                   : r.confirmed,
               }
             : r,

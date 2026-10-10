@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.6.0-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
+For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.6.1-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
 
 `npm ci` installs the locked dependencies and downloads the matching official Electron binary with checksum verification. The first installation needs Internet access to npm and GitHub release assets. Match reminders work offline. Player lookup requires Internet access; previously cached player data remains viewable during outages.
 
@@ -168,7 +168,7 @@ Match state is deliberately temporary: reopening starts at `00:00` with no clear
 npm run dist:win
 ```
 
-The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.6.0.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
+The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.6.1.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
 
 For a portable Windows folder instead of an installer:
 
@@ -208,7 +208,7 @@ bash scripts/test-desktop-cloud.sh
 
 The desktop helper uses the image's existing Xorg dummy driver and Xfce window manager; it starts an isolated display and cleans up its own processes. Chromium's OS sandbox is disabled **only for that restricted-container test process**. A normal desktop launch does not pass that flag. On other Linux CI images, provide Xvfb and a window manager to run the minimise test. A bare X server has no native minimisation support.
 
-The update is verified with 81 unit, 16 browser and two native Electron checks. Live desktop validation includes hero distributions/counts and ranked pairs/full compositions. The OCR integration test verifies minimised audio and timer progress across a gap without new images, then a prolonged-loss pause and resumption. Tests verify scheduling and sound generation, not human audibility through a physical speaker. Use Test sound on Windows for that last check.
+The update is verified with 82 unit, 16 browser and two native Electron checks. Live desktop validation includes hero distributions/counts and ranked pairs/full compositions. The OCR integration test verifies minimised audio and timer progress across a gap without new images, then a prolonged-loss pause and resumption. Tests verify scheduling and sound generation, not human audibility through a physical speaker. Use Test sound on Windows for that last check.
 
 ## Code layout
 
@@ -236,7 +236,7 @@ The renderer has no Node integration. Context isolation, renderer sandboxing, a 
 
 The experimental clock reader needs live Windows/Deadlock/FPS validation before it can be treated as dependable on your PC. Provider coverage may omit part of a player’s career; full history depends on the provider’s Steam access. Custom sound-file imports and a tray icon are also future enhancements. The Urn preset covers its first descent only; full tracking of pickups, delayed spawns and deliveries is a later timer enhancement.
 
-## Short alert voices and live recovery (0.6.0)
+## Short alert voices and live recovery (0.6.1)
 
 Settings offers seven local sound cues: chime, pulse, bell, knock, radio, glass and whistle. **Alert speed** (0.75–2×, default 1.35×) adjusts speech and cue length; Windows speech rate is approximate. **The Operator** prefers a lower installed voice such as Microsoft David; **The Lookout** prefers a brighter voice such as Zira. An explicit **Installed voice** choice overrides the preference. **Test voice** previews a short cue. Windows speech uses one persistent local System.Speech worker, not a fresh process per alert, cloud TTS, or an online recording. Available voices depend on Windows; if only one exists, add another under Windows language/speech settings. Browser development mode uses its speech engine and a pitch difference as fallback. New announcements cancel old unfinished speech to prevent a backlog.
 
