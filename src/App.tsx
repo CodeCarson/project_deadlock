@@ -314,17 +314,19 @@ export default function App() {
           disabled={busy}
           onChange={(e) => change({ voiceId: e.target.value })}
         >
-          {["supertonic3", "kokoro"].map((engine) => (
+          {["natural", "character", "classic"].map((kind) => (
             <optgroup
-              key={engine}
+              key={kind}
               label={
-                engine === "supertonic3"
-                  ? "Natural & character · offline"
-                  : "Classic · offline"
+                kind === "natural"
+                  ? "Natural voices · offline"
+                  : kind === "character"
+                    ? "Character-inspired · offline"
+                    : "Classic · offline"
               }
             >
               {bundledVoices
-                .filter((v) => v.engine === engine)
+                .filter((voice) => voice.kind === kind)
                 .map((voice) => (
                   <option key={voice.id} value={voice.id}>
                     {voice.name}
@@ -548,7 +550,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.7.1 · Independent community tool</span>
+          <span className="version">v0.7.2 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">

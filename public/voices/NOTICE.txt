@@ -33,3 +33,14 @@ Converted model: https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-mod
 Archive SHA256: 82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427
 Generator: scripts/generate-natural-voices.py. Model checksums are pinned there.
 Only generated audio is distributed; model weights and inference code are not.
+
+Additional original fan styles (not Valve actor recordings or clones):
+Hidden King-inspired: Supertonic M3 (sid 7), low resonance and short ambience.
+Bebop-inspired: M2 (sid 6), subtle metallic flanging and warm bass.
+Seven-inspired: M4 (sid 8), light electric grain and modulation.
+Viscous-inspired: M1 (sid 5), bright pitch and subtle fluid chorus.
+All effects are applied during developer generation, not during game playback.
+Exact filter settings and preset IDs are recorded in config/voice-packs.json.
+The associated fictional characters belong to Valve Corporation.
+
+Encoded character clips are decoded and checked for amplitude headroom during generation.

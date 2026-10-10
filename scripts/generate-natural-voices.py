@@ -1,38 +1,49 @@
 #!/usr/bin/env python3
-"""Developer-only generation: Python/sherpa-onnx and models never ship with the app.
+"""Developer-only Supertonic 3 clip generation. Models/inference never ship.
 
-Use sherpa-onnx==1.13.8, soundfile and ffmpeg. Download/extract the checksum-pinned
-Supertonic 3 int8 model from the URL in public/voices/NOTICE.txt, then run:
-    python scripts/generate-natural-voices.py /path/to/sherpa-onnx-supertonic-3-tts-int8-2026-05-11
+Install sherpa-onnx==1.13.8, numpy, soundfile, ffmpeg; use the checksum-pinned
+model archive in public/voices/NOTICE.txt. Generate all natural/character packs:
+  python scripts/generate-natural-voices.py /path/to/model
+Append pack IDs to regenerate only those packs; --cue limits regeneration to
+specific cue IDs. Decoded audio peaks are checked to preserve headroom.
+Two independent synthesis
+workers generate audio; effects are baked into the recordings, never run in-game.
 """
+from concurrent.futures import ThreadPoolExecutor
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import subprocess
-import sys
 import tempfile
 
 import numpy as np
 import sherpa_onnx
 import soundfile as sf
 
-root = Path(__file__).resolve().parents[1]
-model = Path(sys.argv[1]).resolve()
-expected = {
- "duration_predictor.int8.onnx":"c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db",
- "text_encoder.int8.onnx":"c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff",
- "vector_estimator.int8.onnx":"20cd86fa5c6effedfda0e7cffe5b0569ca401c440a0c3a1d72bf39286c0db3fd",
- "vocoder.int8.onnx":"e923d60f53f95eb1ce235f1dc33ec56d9c057823c96fa6f8acf98f32b0da6152",
- "voice.bin":"67d5209b0ee8ce6c74105ffbe12fe6a7628aea3b4ba2fcb308a4a67938a93ce8",
+ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser()
+parser.add_argument("model")
+parser.add_argument("voices", nargs="*")
+parser.add_argument("--cue", nargs="+")
+args = parser.parse_args()
+MODEL = Path(args.model).resolve()
+EXPECTED = {
+    "duration_predictor.int8.onnx": "c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db",
+    "text_encoder.int8.onnx": "c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff",
+    "vector_estimator.int8.onnx": "20cd86fa5c6effedfda0e7cffe5b0569ca401c440a0c3a1d72bf39286c0db3fd",
+    "vocoder.int8.onnx": "e923d60f53f95eb1ce235f1dc33ec56d9c057823c96fa6f8acf98f32b0da6152",
+    "voice.bin": "67d5209b0ee8ce6c74105ffbe12fe6a7628aea3b4ba2fcb308a4a67938a93ce8",
 }
-for name, digest in expected.items():
-    if hashlib.sha256((model / name).read_bytes()).hexdigest() != digest:
+for name, digest in EXPECTED.items():
+    if hashlib.sha256((MODEL / name).read_bytes()).hexdigest() != digest:
         raise SystemExit(f"Unexpected model checksum: {name}")
-catalog = json.loads((root / "config/voice-packs.json").read_text())
+catalog = json.loads((ROOT / "config/voice-packs.json").read_text())
 phrases = {}
 for event in catalog["events"]:
     key, label = event["id"], event["spoken"]
-    phrases[f"{key}-ready"] = f"{label} {'are' if key in ['breakables', 'bridge', 'boxes', 'statues'] else 'is'} ready."
+    verb = "are" if key in ["breakables", "bridge", "boxes", "statues"] else "is"
+    phrases[f"{key}-ready"] = f"{label} {verb} ready."
     phrases[f"{key}-soon"] = f"{label} will be ready soon."
     for warning in catalog["warnings"]:
         phrases[f"{key}-in-{warning}"] = f"{label} in {warning} seconds."
@@ -44,24 +55,28 @@ for event in catalog["events"]:
         for warning in catalog["warnings"]:
             phrases[f"{key}-window-in-{warning}"] = f"{label} window opens in {warning} seconds."
 
-manifest = json.loads((root / "public/voices/manifest.json").read_text())
-manifest["model"] = "Kokoro-82M v1.0 int8 + Supertonic 3 int8"
-with tempfile.TemporaryDirectory() as scratch:
-    for voice in (v for v in catalog["voices"] if v.get("engine") == "supertonic3"):
-        config = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
-          supertonic=sherpa_onnx.OfflineTtsSupertonicModelConfig(
-            duration_predictor=str(model / "duration_predictor.int8.onnx"),
-            text_encoder=str(model / "text_encoder.int8.onnx"),
-            vector_estimator=str(model / "vector_estimator.int8.onnx"),
-            vocoder=str(model / "vocoder.int8.onnx"),
-            tts_json=str(model / "tts.json"), unicode_indexer=str(model / "unicode_indexer.bin"),
-            voice_style=str(model / "voice.bin")),num_threads=2,provider="cpu"))
-        if not config.validate():
-            raise SystemExit("Invalid synthesis configuration")
-        tts = sherpa_onnx.OfflineTts(config)
-        folder = root / "public/voices" / voice["id"].removeprefix("pack:")
-        folder.mkdir(parents=True, exist_ok=True)
+
+def generate(voice):
+    config = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
+        supertonic=sherpa_onnx.OfflineTtsSupertonicModelConfig(
+            duration_predictor=str(MODEL / "duration_predictor.int8.onnx"),
+            text_encoder=str(MODEL / "text_encoder.int8.onnx"),
+            vector_estimator=str(MODEL / "vector_estimator.int8.onnx"),
+            vocoder=str(MODEL / "vocoder.int8.onnx"),
+            tts_json=str(MODEL / "tts.json"),
+            unicode_indexer=str(MODEL / "unicode_indexer.bin"),
+            voice_style=str(MODEL / "voice.bin")),
+        num_threads=2, provider="cpu"))
+    if not config.validate():
+        raise ValueError("Invalid synthesis configuration")
+    tts = sherpa_onnx.OfflineTts(config)
+    folder = ROOT / "public/voices" / voice["id"].removeprefix("pack:")
+    folder.mkdir(parents=True, exist_ok=True)
+    clips = {}
+    with tempfile.TemporaryDirectory() as scratch:
         for cue, text in phrases.items():
+            if args.cue and cue not in args.cue:
+                continue
             generation = sherpa_onnx.GenerationConfig()
             generation.sid = voice["speaker"]
             generation.speed = 1
@@ -69,27 +84,60 @@ with tempfile.TemporaryDirectory() as scratch:
             generation.extra["lang"] = "en"
             audio = tts.generate(text, generation)
             samples = np.asarray(audio.samples, dtype=np.float32)
-            # Trim long leading/trailing silence, preserving natural consonant tails.
             active = np.flatnonzero(np.abs(samples) > 0.008)
             if not active.size:
-                raise SystemExit(f"Silent clip: {voice['id']} {cue}")
+                raise ValueError(f"Silent clip: {voice['id']} {cue}")
             padding = int(audio.sample_rate * 0.045)
             samples = samples[max(0, active[0] - padding):min(len(samples), active[-1] + padding)]
-            peak = float(np.max(np.abs(samples)))
-            samples *= 0.85 / peak
-            duration = len(samples) / audio.sample_rate
-            if not 0.35 < duration < 6:
-                raise SystemExit(f"Unexpected clip length: {voice['id']} {cue} {duration}")
+            samples *= 0.85 / float(np.max(np.abs(samples)))
             wav = Path(scratch) / "cue.wav"
             sf.write(wav, samples, audio.sample_rate, subtype="PCM_16")
             output = folder / f"{cue}.ogg"
-            subprocess.run([
-                "ffmpeg", "-v", "error", "-y", "-i", str(wav), "-c:a", "libopus",
-                "-b:a", "48k", "-application", "voip", "-map_metadata", "-1", str(output),
-            ], check=True)
-            manifest["clips"][str(output.relative_to(root / "public/voices"))] = {
+            effects = voice.get("filters", "anull") + ",alimiter=limit=0.89:level=false"
+            # Lossy encoding can overshoot a sample limiter. Measure the decoded
+            # output and, if needed, re-encode the original WAV with headroom.
+            gain = 1.0
+            for attempt in range(4):
+                subprocess.run([
+                    "ffmpeg", "-v", "error", "-y", "-i", str(wav),
+                    "-af", effects + f",volume={gain:.6f}",
+                    "-c:a", "libopus", "-b:a", "48k", "-application", "voip",
+                    "-map_metadata", "-1", str(output),
+                ], check=True)
+                decoded = np.frombuffer(subprocess.check_output([
+                    "ffmpeg", "-v", "error", "-i", str(output),
+                    "-f", "f32le", "-ac", "1", "pipe:1",
+                ]), dtype="<f4")
+                decoded_peak = float(np.max(np.abs(decoded)))
+                if decoded_peak < 0.98:
+                    break
+                gain *= 0.94 / decoded_peak
+            else:
+                raise ValueError(f"Encoded peak is too high: {voice['id']} {cue}")
+            duration = float(subprocess.check_output([
+                "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1", str(output),
+            ]))
+            if not 0.35 < duration < 6:
+                raise ValueError(f"Unexpected clip length: {voice['id']} {cue} {duration}")
+            clips[str(output.relative_to(ROOT / "public/voices"))] = {
                 "text": text, "seconds": round(duration, 3),
                 "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
             }
-        print(f"Generated {len(phrases)} clips for {voice['name']}", flush=True)
-(root / "public/voices/manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        print(f"Generated {len(clips)} clips for {voice['name']}", flush=True)
+    return clips
+
+
+requested = set(args.voices)
+if args.cue and set(args.cue) - set(phrases):
+    raise SystemExit("Unknown cue")
+voices = [v for v in catalog["voices"] if v.get("engine") == "supertonic3" and
+          (not requested or v["id"] in requested)]
+if requested - {v["id"] for v in voices}:
+    raise SystemExit("Unknown or unsupported requested voice ID")
+manifest = json.loads((ROOT / "public/voices/manifest.json").read_text())
+manifest["model"] = "Kokoro-82M v1.0 int8 + Supertonic 3 int8"
+with ThreadPoolExecutor(max_workers=2) as pool:
+    for clips in pool.map(generate, voices):
+        manifest["clips"].update(clips)
+(ROOT / "public/voices/manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

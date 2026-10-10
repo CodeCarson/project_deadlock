@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.7.1-phase3
+        default: v0.7.2-phase3
         type: string
 
 permissions:
@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.7.1-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.7.2-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.7.1-phase3' }}
+          ref: ${{ inputs.tag || 'v0.7.2-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -103,7 +103,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.7.1-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.7.2-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -114,11 +114,11 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
           "$hash  $zipName" | Set-Content -Encoding utf8NoBOM release/SHA256SUMS.txt
           @'
-          Windows x64 natural-voice and visual-review update (0.7.1). Close the app, extract the entire ZIP and launch Deadlock Companion.exe. Your existing profile, clock crop, stats archive, notes and reminders carry over.
+          Windows x64 natural-voice and visual-review update (0.7.2). Close the app, extract the entire ZIP and launch Deadlock Companion.exe. Your existing profile, clock crop, stats archive, notes and reminders carry over.
 
-          Three new prerecorded voices: Silas (warm storyteller), June (gentle and clear), and The Broker (original Patron-inspired occult announcer). These use Supertonic 3 preset styles; no Valve actor is cloned. Michael, Heart and Emma remain available. Settings > Voice > choose a voice > Test voice, then enable Speak event announcements. Try Natural pace (1x) for normal cadence; saved voice/speed choices are preserved.
+          Three new prerecorded voices: Silas (warm storyteller), June (gentle and clear), and The Broker (original Patron-inspired occult announcer). These use Supertonic 3 preset styles; no Valve actor is cloned. Four more original character-inspired packs: Hidden King (resonant and regal), Bebop (metallic and warm), Seven (charged and rough), and Viscous (bright and fluid). Their effects are baked into the clips. These are fan interpretations, not Valve actor recordings. Michael, Heart and Emma remain available. Settings > Voice > choose a voice > Test voice, then enable Speak event announcements. Try Natural pace (1x) for normal cadence; saved voice/speed choices are preserved.
 
-          Six packs contain 318 short offline recordings for built-in event, respawn, rift-window and 5/15/30-second alerts. Other warning intervals say "soon"; exact seconds remain in the log. Custom or renamed reminders still use system speech. No speech model runs during your games, and no audio is uploaded.
+          Ten packs contain 530 short offline recordings for built-in event, respawn, rift-window and 5/15/30-second alerts. Other warning intervals say "soon"; exact seconds remain in the log. Custom or renamed reminders still use system speech. No speech model runs during your games, and no audio is uploaded.
 
           The interface uses Deadlock's logo, rank artwork, hero portraits, camp symbols, urn, buff and spirit icons, with Valve attribution and pinned sources included. Performance ranks remain app estimates, not official Valve MMR.
 
@@ -126,7 +126,7 @@ jobs:
 
           Missing career games still depend on the provider's Steam-bot access. Existing history recovery, team planner and sparse clock tracking are retained.
 
-          Validated with 89 unit checks, 17 browser checks and three production Electron checks. Windows CI verifies native capture/speech and all six voices from the packaged Windows application before publication.
+          Validated with 89 unit checks, 17 browser checks and three production Electron checks. Windows CI verifies native capture/speech and all ten voices from the packaged Windows application before publication.
           '@ | Set-Content -Encoding utf8NoBOM release/notes.md
           $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
           if ($LASTEXITCODE -eq 0) {

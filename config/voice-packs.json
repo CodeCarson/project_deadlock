@@ -5,42 +5,84 @@
       "name": "Silas \u00b7 warm storyteller",
       "engine": "supertonic3",
       "speaker": 9,
-      "locale": "en"
+      "locale": "en",
+      "kind": "natural"
     },
     {
       "id": "pack:june",
       "name": "June \u00b7 gentle and clear",
       "engine": "supertonic3",
       "speaker": 4,
-      "locale": "en"
+      "locale": "en",
+      "kind": "natural"
     },
     {
       "id": "pack:broker",
       "name": "The Broker \u00b7 occult announcer",
       "engine": "supertonic3",
       "speaker": 6,
-      "locale": "en"
+      "locale": "en",
+      "kind": "character"
+    },
+    {
+      "id": "pack:king",
+      "name": "Hidden King-inspired \u00b7 resonant and regal",
+      "engine": "supertonic3",
+      "kind": "character",
+      "speaker": 7,
+      "locale": "en",
+      "filters": "asetrate=44100*0.96,aresample=44100,bass=g=2:f=130:w=0.7,aecho=0.8:0.9:45|85:0.12|0.06"
+    },
+    {
+      "id": "pack:bebop",
+      "name": "Bebop-inspired \u00b7 metallic and warm",
+      "engine": "supertonic3",
+      "kind": "character",
+      "speaker": 6,
+      "locale": "en",
+      "filters": "highpass=f=85,lowpass=f=6500,flanger=delay=3:depth=0.8:regen=4:width=28:speed=0.2,bass=g=2:f=180:w=0.5"
+    },
+    {
+      "id": "pack:seven",
+      "name": "Seven-inspired \u00b7 charged and rough",
+      "engine": "supertonic3",
+      "kind": "character",
+      "speaker": 8,
+      "locale": "en",
+      "filters": "highpass=f=100,acrusher=bits=12:mix=0.07,tremolo=f=18:d=0.07,equalizer=f=1800:t=q:w=1:g=1.5"
+    },
+    {
+      "id": "pack:viscous",
+      "name": "Viscous-inspired \u00b7 bright and fluid",
+      "engine": "supertonic3",
+      "kind": "character",
+      "speaker": 5,
+      "locale": "en",
+      "filters": "asetrate=44100*1.045,aresample=44100,chorus=0.75:0.85:22:0.08:0.3:0.4"
     },
     {
       "id": "pack:am_michael",
       "name": "Michael \u00b7 American male",
       "speaker": 16,
       "locale": "us",
-      "engine": "kokoro"
+      "engine": "kokoro",
+      "kind": "classic"
     },
     {
       "id": "pack:af_heart",
       "name": "Heart \u00b7 American female",
       "speaker": 3,
       "locale": "us",
-      "engine": "kokoro"
+      "engine": "kokoro",
+      "kind": "classic"
     },
     {
       "id": "pack:bf_emma",
       "name": "Emma \u00b7 British female",
       "speaker": 21,
       "locale": "gb",
-      "engine": "kokoro"
+      "engine": "kokoro",
+      "kind": "classic"
     }
   ],
   "events": [

@@ -1,3 +1,4 @@
+import catalog from "../../config/voice-packs.json" with { type: "json" };
 import { test, expect, type Page } from "@playwright/test";
 
 async function observeAudio(page: Page) {
@@ -46,7 +47,7 @@ async function observeAudio(page: Page) {
   });
 }
 
-test("six bundled voices actually play, preserve pitch at speed, and persist alongside sound choices", async ({
+test("ten bundled voices actually play, preserve pitch at speed, and persist alongside sound choices", async ({
   page,
 }) => {
   await observeAudio(page);
@@ -78,14 +79,7 @@ test("six bundled voices actually play, preserve pitch at speed, and persist alo
   ).toHaveCount(7);
   await page.getByLabel("Notification sound").selectOption("radio");
   await page.getByLabel("Alert speed", { exact: true }).selectOption("1.75");
-  for (const voice of [
-    "silas",
-    "june",
-    "broker",
-    "am_michael",
-    "af_heart",
-    "bf_emma",
-  ]) {
+  for (const voice of catalog.voices.map((voice) => voice.id.slice(5))) {
     await page
       .getByLabel("Voice", { exact: true })
       .selectOption(`pack:${voice}`);

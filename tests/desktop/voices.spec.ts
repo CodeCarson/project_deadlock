@@ -1,3 +1,4 @@
+import catalog from "../../config/voice-packs.json" with { type: "json" };
 import {
   test,
   expect,
@@ -57,14 +58,9 @@ test("production offline voice files decode and finish, including an alert while
     });
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByLabel("Alert speed", { exact: true }).selectOption("1.5");
-    for (const [index, voice] of [
-      "silas",
-      "june",
-      "broker",
-      "am_michael",
-      "af_heart",
-      "bf_emma",
-    ].entries()) {
+    for (const [index, voice] of catalog.voices
+      .map((voice) => voice.id.slice(5))
+      .entries()) {
       await page
         .getByLabel("Voice", { exact: true })
         .selectOption(`pack:${voice}`);
@@ -84,7 +80,7 @@ test("production offline voice files decode and finish, including an alert while
       ).toBe(true);
     }
     expect(await page.evaluate(() => (window as any).voiceEnds)).toHaveLength(
-      6,
+      catalog.voices.length,
     );
     await expect
       .poll(() =>
@@ -96,7 +92,7 @@ test("production offline voice files decode and finish, including an alert while
           ),
       )
       .toBe(true);
-    await page.getByLabel("Voice", { exact: true }).selectOption("pack:broker");
+    await page.getByLabel("Voice", { exact: true }).selectOption("pack:seven");
     await page.evaluate(() => window.companion!.stopAlertSpeech());
     await page.getByLabel("Speak event announcements").click();
     await expect(page.getByLabel("Speak event announcements")).toBeChecked();
@@ -120,10 +116,10 @@ test("production offline voice files decode and finish, including an alert while
     );
     await expect
       .poll(() => page.evaluate(() => (window as any).voiceEnds.length))
-      .toBe(7);
+      .toBe(catalog.voices.length + 1);
     expect(
       (await page.evaluate(() => (window as any).voiceStarts)).at(-1).url,
-    ).toContain("/voices/broker/bridge-ready.ogg");
+    ).toContain("/voices/seven/bridge-ready.ogg");
     for (const end of await page.evaluate(() => (window as any).voiceEnds)) {
       expect(end.duration).toBeGreaterThan(0.35);
       expect(end.duration).toBeLessThan(6);
