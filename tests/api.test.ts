@@ -253,3 +253,46 @@ describe("API transport and offline cache", () => {
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
 });
+
+it("recovers only verified player match IDs and preserves cached history", async () => {
+  const s = setup();
+  await s.client.request(request);
+  s.fetcher.mockImplementation(async (url) => {
+    const matchId = Number(String(url).split("/matches/")[1]?.split("/")[0]);
+    if (matchId === 999) return new Response("", { status: 404 });
+    return Response.json({
+      match_info: {
+        match_id: matchId,
+        start_time: 50,
+        duration_s: 1200,
+        game_mode: 1,
+        match_mode: 1,
+        winning_team: 0,
+        players: [
+          {
+            account_id: matchId === 456 ? 1234 : 5678,
+            hero_id: 6,
+            team: 0,
+            kills: 2,
+            deaths: 1,
+            assists: 3,
+            net_worth: 10000,
+            last_hits: 100,
+          },
+        ],
+      },
+    });
+  });
+  const result = await s.client.recoverHistory(1234, [456, 456, 789, 999]);
+  expect(result.recovered).toBe(1);
+  expect(result.errors).toHaveLength(2);
+  const archive = (await s.client.request(request)).data as ReturnType<
+    typeof fixture
+  >[];
+  expect(archive.map((m) => m.match_id)).toEqual([123, 456]);
+  expect(archive[1].player_match_outcome).toBe(1);
+  await expect(s.client.recoverHistory(1234, [0])).rejects.toThrow();
+  await expect(
+    s.client.recoverHistory(1234, Array(31).fill(456)),
+  ).rejects.toThrow();
+});

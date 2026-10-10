@@ -55,6 +55,11 @@ function browserBridge(): Bridge {
     request: (request) => api.request(request),
     importHistory: (accountId, archive) =>
       api.importHistory(accountId, archive),
+    recoverHistory: (accountId, ids) => api.recoverHistory(accountId, ids),
+    async alertVoices() {
+      return [];
+    },
+    async speakAlert() {},
     async loadSettings() {
       return settings;
     },

@@ -66,16 +66,12 @@ export function ClockCaptureSettings({
     <section className="panel settings-panel automatic-panel">
       <h2>Automatic match tracking</h2>
       <p>
-        Reads your configured clock crop locally to seed an independent timer.
-        After a few initial checks, short two-reading sync bursts run sparingly.
-        No recording or uploads. Sparse OCR reduces capture work; FPS impact
-        still depends on your PC.
+        Crop only the visible MM:SS clock. Readings seed a local timer; sparse
+        checks keep it synced. Images stay on your PC.
       </p>
       <p>
-        Enter a practice match so the clock is visible. Select its display, then
-        adjust X/Y and size until the test image contains only the clock.
-        Coordinates are physical screen pixels. Move or resize the game, or
-        change display scaling: test the crop again.
+        Open a practice match, select its display, and adjust the crop. Test
+        again after resizing the game or changing display scaling.
       </p>
       <div className="history-controls capture-controls">
         <label>

@@ -63,12 +63,14 @@ const number = (value: number | null, digits = 0) =>
 export function PlayerDashboard({
   accountId,
   onAccountChange,
+  autoRefresh = true,
   view = "Dashboard",
   savedFilters = { hero: "all", mode: "all", days: "all" },
   onFiltersChange,
   research = emptyResearch,
   onResearchChange,
 }: {
+  autoRefresh?: boolean;
   view?: "Dashboard" | "Heroes" | "Match History" | "Analysis" | "Stats";
   research?: Research;
   onResearchChange?: (research: Research) => Promise<void>;
@@ -164,6 +166,22 @@ export function PlayerDashboard({
     }
     setLoading(false);
   };
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    if (!autoRefresh || !accountId) return;
+    let active = true;
+    const refresh = async () => {
+      const timer = await bridge.getTimer();
+      if (active && timer.status !== "running")
+        await loadRef.current(Number(accountId), true);
+    };
+    const interval = setInterval(() => void refresh().catch(() => {}), 600000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [accountId, autoRefresh]);
   useEffect(() => {
     setInput(accountId);
     setHero(savedFilters.hero);
@@ -325,41 +343,6 @@ export function PlayerDashboard({
               </button>
             </div>
           </section>
-          <section className="panel freshness-panel">
-            <strong>
-              {data.history.length} available matches · newest match{" "}
-              {data.history[0]
-                ? new Date(data.history[0].start_time * 1000).toLocaleString()
-                : "unavailable"}
-            </strong>
-            <p>
-              {data.historyResult.historySource === "steam"
-                ? "The provider attempted a Steam-history fetch. This does not guarantee complete career history."
-                : data.historyResult.historySource === "stored"
-                  ? "The provider returned indexed history without calling Steam. This can omit recent games and does not represent your career total."
-                  : "The provider did not report whether it fetched Steam history. Fetch time alone does not establish that every match is included."}
-            </p>
-            <p>
-              Normal Refresh checks for updates. A full rebuild requests older
-              Steam records too, needs provider bot access, and is limited to
-              once per hour. See the provider’s{" "}
-              <a
-                href="https://api.deadlock-api.com/docs"
-                target="_blank"
-                rel="noreferrer"
-              >
-                match-history documentation
-              </a>{" "}
-              for bot access; provider subscriptions may be required.
-            </p>
-            <button
-              className="button secondary small"
-              disabled={loading}
-              onClick={() => void load(data.accountId, true, true)}
-            >
-              Rebuild full history
-            </button>
-          </section>
           <HistoryCoverage
             key={`coverage-${data.accountId}`}
             accountId={data.accountId}
@@ -369,6 +352,7 @@ export function PlayerDashboard({
             onSave={saveResearch}
             loading={loading}
             onReload={() => load(data.accountId)}
+            onRebuild={() => load(data.accountId, true, true)}
           />
           {data.warnings.length > 0 && (
             <div className="banner info-banner">
@@ -540,11 +524,8 @@ export function PlayerDashboard({
                 <MatchHistory matches={filtered} heroes={data.heroes} />
               </details>
               <details className="panel stats-disclosure">
-                <summary>Explore hero statistics</summary>
+                <summary>Explore hero statistics & long-term charts</summary>
                 <HeroAnalytics matches={filtered} heroes={data.heroes} />
-              </details>
-              <details className="panel stats-disclosure">
-                <summary>Explore long-term charts & reported badges</summary>
                 <PerformanceCharts matches={filtered} ranks={data.ranks} />
               </details>
             </>

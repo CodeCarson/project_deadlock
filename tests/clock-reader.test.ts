@@ -179,3 +179,22 @@ describe("independent clock with sparse synchronization", () => {
     expect(engine.snapshot().cleared).toEqual({});
   });
 });
+
+it("confirms a fresh near-zero match without requiring a long missing-clock gap", () => {
+  const { reader, engine, read, advance } = setup();
+  read("02:00");
+  advance(1500);
+  read("00:00");
+  expect(engine.snapshot().status).toBe("paused");
+  advance(1500);
+  read("00:01");
+  expect(engine.snapshot().status).toBe("running");
+  expect(reader.snapshot().matchId).toBe("screen-2");
+});
+it("idles the capture scheduler during manual control", () => {
+  const { reader, read, advance } = setup();
+  read("02:00");
+  reader.manual({ type: "pause" });
+  advance(30000);
+  expect(reader.nextSampleDelay()).toBe(5000);
+});

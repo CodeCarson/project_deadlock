@@ -199,13 +199,18 @@ test("production app, native persistence, minimized scheduling and audio generat
         state.externalLinks.push(url);
       };
     });
-    await page.locator(".history-coverage summary").click();
     await page
-      .getByRole("link", { name: "account/access website", exact: true })
+      .locator(".history-coverage summary")
+      .first()
+      .evaluate((el) => {
+        (el.parentElement as HTMLDetailsElement).open = true;
+      });
+    await page
+      .getByRole("link", { name: "Set up Steam history access", exact: true })
       .click();
     await page
       .getByRole("link", {
-        name: "provider's match-history documentation",
+        name: "Provider documentation",
         exact: true,
       })
       .click();
@@ -218,7 +223,7 @@ test("production app, native persistence, minimized scheduling and audio generat
       "https://deadlock-api.com/",
       "https://api.deadlock-api.com/docs",
     ]);
-    await page.locator(".history-coverage summary").click();
+    await page.locator(".history-coverage summary").first().click();
     await page
       .getByLabel("Match review note")
       .fill("Native journal persistence check");
@@ -525,6 +530,7 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
     expect(
       (await page.evaluate(() => window.companion!.getTimer())).status,
     ).not.toBe("running");
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByLabel("Enable automatic match tracking").click();
     await expect(
       page.getByLabel("Enable automatic match tracking"),
@@ -626,9 +632,9 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
       (globalThis as any).clockDynamic = true;
       (globalThis as any).clockStartAt = Date.now() - 10000;
     }, images[2]);
-    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
     await page
-      .getByRole("button", { name: "Resume automatic tracking", exact: true })
+      .getByRole("button", { name: "Resume live tracking", exact: true })
       .click();
     await expect(
       page.getByText("Local timer running — sparse sync checks", {
@@ -640,6 +646,7 @@ test("local OCR calibration and sampled-clock reminders while minimised", async 
         (a) => a.name === "Screen clock test",
       ),
     ).toHaveLength(1);
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByLabel("Enable automatic match tracking").click();
     await expect(
       page.getByLabel("Enable automatic match tracking"),

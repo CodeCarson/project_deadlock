@@ -220,7 +220,7 @@ describe("imported rule identity", () => {
 
 describe("configuration and clock input", () => {
   it("ships enabled sourced current-patch presets with conditional camp timers", () => {
-    expect(defaultSettings.presetRevision).toBe(1);
+    expect(defaultSettings.presetRevision).toBe(2);
     expect(
       defaultSettings.rules.every(
         (r) =>

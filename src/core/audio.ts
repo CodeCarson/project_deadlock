@@ -1,51 +1,116 @@
 import type { Settings } from "./schema.js";
+import { shortAnnouncement } from "./alert-cues.js";
+export { shortAnnouncement } from "./alert-cues.js";
+import { bridge, isDesktop } from "./bridge.js";
 let context: AudioContext | undefined;
+let nativeVoices: { id: string; name: string }[] = [];
 let queue = Promise.resolve();
+export async function availableVoices() {
+  if (isDesktop) nativeVoices = await bridge.alertVoices().catch(() => []);
+  return nativeVoices.length
+    ? nativeVoices
+    : (window.speechSynthesis?.getVoices() ?? []).map((v) => ({
+        id: v.voiceURI,
+        name: v.name,
+      }));
+}
 export async function unlockAudio() {
   context ??= new AudioContext();
   if (context.state === "suspended") await context.resume();
 }
-export async function playSound(settings: Pick<Settings, "sound" | "volume">) {
+const soundNotes: Record<Settings["sound"], number[]> = {
+  chime: [660, 880, 1100],
+  pulse: [440, 440],
+  bell: [1046, 784],
+  knock: [150, 110],
+  radio: [780, 520, 780],
+  glass: [1320, 1760],
+  whistle: [880, 1320],
+};
+export async function playSound(
+  settings: Pick<Settings, "sound" | "volume"> &
+    Partial<Pick<Settings, "alertSpeed">>,
+) {
   if (settings.volume === 0) return;
   await unlockAudio();
   const ctx = context!;
   if (ctx.state !== "running")
-    throw new Error("Audio is blocked. Click Test sound to enable it.");
-  const notes =
-    settings.sound === "chime"
-      ? [660, 880, 1100]
-      : settings.sound === "pulse"
-        ? [440, 440]
-        : [1046, 784];
-  notes.forEach((frequency, index) => {
-    const start = ctx.currentTime + index * 0.14;
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.type = settings.sound === "bell" ? "sine" : "triangle";
+    throw new Error("Click Test sound to enable audio.");
+  const speed = settings.alertSpeed ?? 1.35;
+  soundNotes[settings.sound].forEach((frequency, index) => {
+    const start = ctx.currentTime + (index * 0.12) / speed;
+    const oscillator = ctx.createOscillator(),
+      gain = ctx.createGain();
+    oscillator.type = ["bell", "glass", "whistle"].includes(settings.sound)
+      ? "sine"
+      : settings.sound === "radio"
+        ? "square"
+        : "triangle";
     oscillator.frequency.value = frequency;
+    if (settings.sound === "whistle")
+      oscillator.frequency.exponentialRampToValueAtTime(
+        frequency * 1.2,
+        start + 0.16 / speed,
+      );
     gain.gain.setValueAtTime(0, start);
-    gain.gain.linearRampToValueAtTime(settings.volume * 0.23, start + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+    gain.gain.linearRampToValueAtTime(
+      settings.volume * (settings.sound === "radio" ? 0.09 : 0.23),
+      start + 0.01,
+    );
+    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22 / speed);
     oscillator.connect(gain);
     gain.connect(ctx.destination);
     oscillator.start(start);
-    oscillator.stop(start + 0.32);
+    oscillator.stop(start + 0.25 / speed);
     oscillator.onended = () => {
       oscillator.disconnect();
       gain.disconnect();
     };
   });
 }
+export async function speak(settings: Settings, message: string) {
+  if (settings.volume === 0) return;
+  const text = shortAnnouncement(message);
+  const choices = await availableVoices();
+  const preferred =
+    choices.find((v) => v.id === settings.voiceId) ??
+    choices.find((v) =>
+      settings.voiceStyle === "operator"
+        ? /david|mark|george|male/i.test(v.name) && !/female/i.test(v.name)
+        : /zira|hazel|susan|female/i.test(v.name),
+    ) ??
+    choices[settings.voiceStyle === "lookout" && choices.length > 1 ? 1 : 0];
+  if (isDesktop && nativeVoices.length) {
+    await bridge.speakAlert(
+      text,
+      preferred?.id ?? "",
+      settings.alertSpeed,
+      settings.volume,
+    );
+    return;
+  }
+  if (!("speechSynthesis" in window))
+    throw new Error("No speech engine is available.");
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.volume = settings.volume;
+  utterance.rate = settings.alertSpeed;
+  utterance.pitch = settings.voiceStyle === "operator" ? 0.8 : 1.2;
+  utterance.voice =
+    window.speechSynthesis
+      .getVoices()
+      .find((v) => v.voiceURI === preferred?.id) ?? null;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
 export function notify(settings: Settings, message: string) {
+  const requestedAt = Date.now();
   const task = queue.then(async () => {
+    if (Date.now() - requestedAt > 4000) return;
     await playSound(settings);
-    if (settings.speech && settings.volume > 0 && "speechSynthesis" in window) {
-      const speech = new SpeechSynthesisUtterance(message);
-      speech.volume = settings.volume;
-      speech.rate = 1.05;
-      window.speechSynthesis.speak(speech);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (settings.speech) await speak(settings, message);
+    await new Promise((resolve) =>
+      setTimeout(resolve, 250 / settings.alertSpeed),
+    );
   });
   queue = task.catch(() => {});
   return task;

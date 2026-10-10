@@ -1,6 +1,6 @@
-# Deadlock Companion — Personal homebase
+# Deadlock Companion — The Cursed Apple
 
-A Windows desktop companion with four main tabs: **Stats**, **Team Planner**, **Live Match**, and **Settings**. Review each game's next improvement, track a custom hero-adjusted performance estimate, identify your strongest measured heroes, and plan a lineup around your team. A local match timer continues between sparse clock checks, including brief alt-tabs and blocked HUD clocks.
+A Windows desktop companion with three main destinations: **Stats**, **Team Planner**, and **Live Match**. **Settings** lives in the header. The interface uses an original occult New York skyline, bottle green, brass and letterpress-style headings. Review each game's next improvement, track a custom hero-adjusted performance estimate, identify your strongest measured heroes, and plan a lineup around your team. A local match timer continues between sparse clock checks, including brief alt-tabs and blocked HUD clocks.
 
 **Validation:** public history, exact Steam profile lookup, Steam-name suggestions, match metadata, items, heroes, and ranks were checked live through the desktop bridge on 2026-10-09. Unit/browser tests use API fixtures; the opt-in native smoke check uses the live service. Enabled timer presets were checked against current wiki mechanics and the latest released update listed there (2026-10-06). Valve's forum currently returns a browser challenge to this cloud, so patch text was checked through the wiki's linked update pages.
 
@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.5.0-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
+For a portable Windows download, use [the stats update](https://github.com/CodeCarson/project_deadlock/releases/tag/v0.6.0-phase3), extract the entire ZIP and open `Deadlock Companion.exe`. Keep the extracted files together. If you have downloaded the source directory instead, start with `npm ci`.
 
 `npm ci` installs the locked dependencies and downloads the matching official Electron binary with checksum verification. The first installation needs Internet access to npm and GitHub release assets. Match reminders work offline. Player lookup requires Internet access; previously cached player data remains viewable during outages.
 
@@ -42,9 +42,11 @@ Player responses and name suggestions are cached for five minutes; hero/rank/ite
 
 ## Collecting older history
 
-Open **History coverage** to compare the latest provider response with the app's retained collection, see its oldest match date, and optionally enter your own expected career total. That total is a personal estimate, not a provider-verified count. Successful refreshes merge matches by ID instead of discarding older collected records when a later response shrinks; fresh non-missing fields take precedence.
+The **Your match archive** panel appears near the top of Stats. Compare the latest provider response with the app's retained collection, see its oldest match date, and optionally enter your own expected career total. That total is a personal estimate, not a provider-verified count. Successful refreshes merge matches by ID instead of discarding older collected records when a later response shrinks; fresh non-missing fields take precedence.
 
 The provider has no pagination parameter for this history endpoint. If it reports **Called Steam: no**, refreshing cannot reveal matches outside its indexed database. Follow the current access instructions on [deadlock-api.com](https://deadlock-api.com), verify that your Steam account is friends with the provider's Steam bot, then use **Rebuild full history**. The provider controls availability and may require a subscription. A Steam call does not guarantee that every older match is retrievable.
+
+**Recover known match IDs** accepts up to 30 numeric IDs and reads only existing indexed metadata. It verifies your account is in each match before merging it; unavailable matches are reported. Automatic archive updates run every ten minutes outside a running match and can be disabled in Settings.
 
 **Export collected history** saves a versioned JSON archive. **Import history archive** merges a previously exported archive for the same account; it does not scrape another service or manufacture missing matches. Imports require explicit account IDs on every row, reject mismatched accounts and unsupported formats, and are limited to 10 MB and 10,000 rows. The archive contains match history only. Goals and journal notes remain in the app's local settings profile.
 
@@ -62,11 +64,11 @@ Use the review prompts to inspect what you knew before deaths, how you arrived a
 
 ## Companion rank and best three heroes
 
-In **Stats**, choose Normal or Street Brawl and press **Calculate Companion rank**. Model 1 uses up to 60 scored ranked/unranked games from the past 90 days. Private lobbies, bot games, tutorials, placement and unknown match modes are excluded. Missing history is not inferred. Each complete match is compared with the same hero, game mode and one of four duration bands (under 20, 20–30, 30–40 or 40+ minutes) in the provider's last 30 days of public ranked/unranked games. Individual stat scores interpolate the published quantiles; the combined index is not an overall player percentile.
+In **Stats**, choose Normal or Street Brawl and press **Calculate Companion rank**. Model 2 uses up to 60 scored ranked/unranked games from the past 90 days. Private lobbies, bot games, tutorials, placement and unknown match modes are excluded. Missing history is not inferred. Each complete match is compared with the same hero, game mode and one of four duration bands (under 20, 20–30, 30–40 or 40+ minutes) in the provider's last 30 days of public ranked/unranked games. Individual stat scores interpolate the published quantiles; the combined index is not an overall player percentile.
 
-The weights are survival 20%, kills plus assists 25%, last hits 20%, final net worth/min 25%, and scored result 10%. Low combat involvement caps survival credit. At least 100 indexed hero games are required in the cohort, though the API does not expose separate quantile sample counts. Ten neutral games of weight shrink small personal samples toward 50. At least ten measured games are required to show a Companion rank. The custom bands are Developing (<35), Building (35–49), Established (50–64), Advanced (65–79), and Exceptional (80+). These describe recorded performance; they do not reveal hidden Valve MMR or prove a player's true matchmaking rank. Lobby strength, role choices, patches and provider coverage affect the estimate.
+The weights are survival 20%, kills plus assists 25%, last hits 20%, final net worth/min 25%, and scored result 10%. Low combat involvement caps survival credit. At least 100 indexed hero games are required in the cohort, though the API does not expose separate quantile sample counts. Ten neutral games of weight shrink small personal samples toward 50. At least ten measured games are required to show a Companion rank. The app maps its 0–100 performance scale evenly onto the current in-game tier names, Initiate through Eternus, with six divisions each. The progress bar shows the next app division. This is explicitly a Companion estimate, not an official Valve badge or hidden MMR. A sanity check compares measured ranked games with valid reported Valve badges when at least ten are present; unranked history cannot validate an official rank prediction. Lobby strength, role choices, patches and provider coverage affect the estimate.
 
-**Your best three heroes** uses this same formula, requiring five rated games per hero. Only eligible heroes are shown. Saved rating snapshots persist per account and mode; repeating the same set of matches does not add a snapshot. Match coaching selects a measured weakness or the least strong opportunity, compares it with your prior same-hero/match-mode games or community references, and offers one actionable next-game focus with the hero's reported class/playstyle. A strong game does not receive an invented failure. Add the focus to your journal note to track the decision later.
+**Your best three heroes** uses this same formula across all collected scored games with available current hero comparisons, requiring five rated games per hero. Older patches can differ; the app reports the measured fraction. Overall rank still uses recent games. Only eligible heroes are shown. Saved rating snapshots persist per account and mode; repeating the same set of matches does not add a snapshot. Match coaching selects a measured weakness or the least strong opportunity, compares it with your prior same-hero/match-mode games or community references, and offers one actionable next-game focus with the hero's reported class/playstyle. A strong game does not receive an invented failure. Add the focus to your journal note to track the decision later.
 
 ## Team planner
 
@@ -74,11 +76,13 @@ Enter your team with Steam names or numeric IDs. Normal has six slots; Street Br
 
 Choose **All ranked games** or **Ascendant / Eternus games** (average lobby badge 101+). References use the last 30 days and require 20 recorded games per pair/full lineup. Full templates are assigned to players using exact unique-hero matching; a bounded search also offers compositions based on personal fit and observed hero pairs. Empty high-rank full-lineup data falls back to pair-based suggestions with that distinction shown. The public API does not identify professional tournament matches, so the planner does not claim pro evidence.
 
-Planner fit is 75% personal hero fit, 15% smoothed pair results and 10% available full-lineup results. Up to four experienced heroes per player receive community performance comparisons from up to ten recent games per hero; other picks use personal win rate with ten neutral games of weight. At least three personal games are needed for an experienced pick; missing evidence marks a hero as unfamiliar. Pair/lineup results use 100 neutral outcomes of weight. Recorded full-lineup win rates, sample counts and Wilson intervals appear separately. The fit index is not a predicted team win probability, and co-occurrence is not proof of causal synergy. Agree on initiation, objective conversion and resource allocation before queueing.
+The planner uses every collected scored game in the chosen mode to establish experience and smoothed results. Recent hero-adjusted performance is used where available; it does not discard an older hero just because it falls outside the last 60 games. Add a **Comfort pool** manually to cover missing history, lock a hero, or exclude one globally. Choose **Comfort picks first**, **Balanced**, or **Explore more heroes**. Three plans prioritise distinct picks for the first unlocked known player when valid alternatives are within 12 fit points. The search reserves capacity for alternate picks instead of crowding them out.
+
+Balanced fit weights are 70% personal, 15% pair results, 10% full-lineup results and 5% broad role coverage. Comfort mode raises personal weight to 85%; Explore uses 55% personal and 30% pair results. Comfort choices and experience add bounded personal bonuses. Basic frontline/control/damage/sustain coverage is shown; unclassified hero kits are marked, and these tags are not a substitute for build or lane planning. Up to eight experienced heroes per player receive bounded comparisons. Personal win-rate fallback uses 20 neutral games; pairs/lineups use 100 neutral outcomes. Full-lineup records, sample counts and Wilson intervals appear separately. Fit is not a team win probability, and co-occurrence does not prove causal synergy. The API has no verified pro-match flag.
 
 ## History, heroes and charts
 
-The Stats workspace keeps the detailed views in expandable sections instead of separate top-level tabs. **Explore all matches** retains 25-match pages, match-ID/result filters, ordering and recorded details. **Explore hero statistics** shows each hero's outcomes, KDA and economy. **Explore long-term charts & reported badges** includes daily values and available reported badges. Shared hero, mode and time filters persist; daily dates use the computer's local time zone.
+The Stats workspace keeps the detailed views in expandable sections instead of separate top-level tabs. **Explore all matches** retains 25-match pages, match-ID/result filters, ordering and recorded details. **Explore hero statistics & long-term charts** combines hero outcomes, KDA, economy, daily values and available reported badges. Shared hero, mode and time filters persist; daily dates use the computer's local time zone.
 
 ## Your first match (manual mode)
 
@@ -154,7 +158,7 @@ Local OCR and scheduling are tested with generated clock images, including 14–
 
 ## Persistence
 
-Electron atomically saves settings to `settings.json` in `app.getPath('userData')` (normally `%APPDATA%\deadlock-companion` on Windows). This includes player account ID, hero/mode/time filters, automatic-tracking preference, sync/grace settings, notes, goals, rating snapshots, team roster/locks, rules, enabled categories, warning selections, volume, selected sound, speech, and compact layout. API results are saved separately in `api-cache/` inside that directory. Upgrading the application retains the same profile directory; export rules as a backup before replacing the extracted app folder. Invalid settings files are preserved as `settings.invalid-<timestamp>.json` and defaults are loaded. Browser development mode uses localStorage separately.
+Electron atomically saves settings to `settings.json` in `app.getPath('userData')` (normally `%APPDATA%\deadlock-companion` on Windows). This includes player account ID, hero/mode/time filters, automatic-tracking preference, sync/grace settings, notes, goals, rating snapshots, team roster/locks/comfort pools/exclusions/selection style, automatic archive updates, rules, enabled categories, warning selections, volume, selected sound, installed voice, voice style, alert speed, speech, and compact layout. API results are saved separately in `api-cache/` inside that directory. Upgrading the application retains the same profile directory; export rules as a backup before replacing the extracted app folder. Invalid settings files are preserved as `settings.invalid-<timestamp>.json` and defaults are loaded. Browser development mode uses localStorage separately.
 
 Match state is deliberately temporary: reopening starts at `00:00` with no clear marks, preventing an old match from resuming accidentally. Built-in sounds are generated locally with Web Audio; arbitrary custom audio-file imports are not included in this phase.
 
@@ -164,7 +168,7 @@ Match state is deliberately temporary: reopening starts at `00:00` with no clear
 npm run dist:win
 ```
 
-The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.5.0.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
+The x64 NSIS installer is written to `release/Deadlock Companion Setup 0.6.0.exe`. It allows choosing an installation folder and creating a desktop shortcut. Signing and executable resource editing are disabled for this development release. A Windows publisher certificate and final application icon/metadata should be added before a public release.
 
 For a portable Windows folder instead of an installer:
 
@@ -204,7 +208,7 @@ bash scripts/test-desktop-cloud.sh
 
 The desktop helper uses the image's existing Xorg dummy driver and Xfce window manager; it starts an isolated display and cleans up its own processes. Chromium's OS sandbox is disabled **only for that restricted-container test process**. A normal desktop launch does not pass that flag. On other Linux CI images, provide Xvfb and a window manager to run the minimise test. A bare X server has no native minimisation support.
 
-The update passed 71 unit, 14 browser and two native Electron checks. Live desktop validation includes hero distributions/counts and ranked pairs/full compositions. The OCR integration test verifies minimised audio and timer progress across a gap without new images, then a prolonged-loss pause and resumption. Tests verify scheduling and sound generation, not human audibility through a physical speaker. Use Test sound on Windows for that last check.
+The update is verified with 81 unit, 16 browser and two native Electron checks. Live desktop validation includes hero distributions/counts and ranked pairs/full compositions. The OCR integration test verifies minimised audio and timer progress across a gap without new images, then a prolonged-loss pause and resumption. Tests verify scheduling and sound generation, not human audibility through a physical speaker. Use Test sound on Windows for that last check.
 
 ## Code layout
 
@@ -231,3 +235,11 @@ The renderer has no Node integration. Context isolation, renderer sandboxing, a 
 ## What remains
 
 The experimental clock reader needs live Windows/Deadlock/FPS validation before it can be treated as dependable on your PC. Provider coverage may omit part of a player’s career; full history depends on the provider’s Steam access. Custom sound-file imports and a tray icon are also future enhancements. The Urn preset covers its first descent only; full tracking of pickups, delayed spawns and deliveries is a later timer enhancement.
+
+## Short alert voices and live recovery (0.6.0)
+
+Settings offers seven local sound cues: chime, pulse, bell, knock, radio, glass and whistle. **Alert speed** (0.75–2×, default 1.35×) adjusts speech and cue length; Windows speech rate is approximate. **The Operator** prefers a lower installed voice such as Microsoft David; **The Lookout** prefers a brighter voice such as Zira. An explicit **Installed voice** choice overrides the preference. **Test voice** previews a short cue. Windows speech uses one persistent local System.Speech worker, not a fresh process per alert, cloud TTS, or an online recording. Available voices depend on Windows; if only one exists, add another under Windows language/speech settings. Browser development mode uses its speech engine and a pitch difference as fallback. New announcements cancel old unfinished speech to prevent a backlog.
+
+The default **Boxes & golden statues** is one editable conditional rule. Matching old boxes/statues rules are merged, preserving enable choices; deliberately different custom schedules remain intact. Other settings, notes, goals and custom reminders carry over.
+
+After manual pause, **Resume live tracking** is directly on Live Match. It restores automatic tracking with the saved crop and waits for a readable game clock. Manual control idles the capture scheduler. Two consistent near-zero readings can confirm a new match without a long hidden-clock gap. Sparse checks still cannot detect a pause while the clock is obscured; use Stop when leaving a match. In-game FPS and physical speaker output require testing on your PC.

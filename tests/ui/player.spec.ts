@@ -191,14 +191,12 @@ test("Phase 3 views use available history, preserve filters and distinguish rebu
   await mockApi(page);
   await lookup(page);
   await expect(
-    page.getByText(/3 available matches · newest match/),
+    page.locator(".archive-count").getByText("3", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByText(/indexed history without calling Steam/),
-  ).toBeVisible();
+  await expect(page.getByText(/Indexed history only/)).toBeVisible();
   await page
     .locator(".stats-disclosure > summary")
-    .filter({ hasText: "Explore long-term charts" })
+    .filter({ hasText: "Explore hero statistics & long-term charts" })
     .click();
   await expect(
     page.getByRole("img", { name: "Daily win rate and KDA chart" }),
@@ -215,7 +213,9 @@ test("Phase 3 views use available history, preserve filters and distinguish rebu
   await page
     .locator(".stats-disclosure > summary")
     .filter({ hasText: "Explore hero statistics" })
-    .click();
+    .evaluate((el) => {
+      (el.parentElement as HTMLDetailsElement).open = true;
+    });
   await expect(
     page.getByRole("img", { name: "Matches played by hero" }),
   ).toBeVisible();

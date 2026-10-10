@@ -8,6 +8,8 @@ import {
   recentRatedScope,
   gameCoaching,
   durationBand,
+  performanceRank,
+  ratingValidation,
 } from "../src/core/performance";
 const q = quantilesSchema.parse({
   avg: 50,
@@ -134,7 +136,8 @@ describe("hero-aware performance and personal coaching", () => {
     expect(coaching.weakest?.key).toBe("deaths");
     expect(coaching.weakest?.expected).toBe(2);
     expect(coaching.prior).toBe(6);
-    expect(coaching.action).toContain("escape route");
+    expect(coaching.action).toContain("ultimate");
+    expect(coaching.action.split(/\s+/).length).toBeLessThanOrEqual(25);
     expect(coaching.identity).toBe("mystic");
   });
   it("does not invent a failure for excellent games or one-measurement personal baselines", () => {
@@ -146,7 +149,7 @@ describe("hero-aware performance and personal coaching", () => {
       net_worth: 2970,
     });
     const c = gameCoaching(m, [], { id: 1, name: "Mina" }, ref);
-    expect(c.title).toBe("Your next opportunity");
+    expect(c.title).toBe("Next opportunity");
     expect(c.weakest).toBeDefined();
     const sparse = Array.from({ length: 6 }, (_, i) =>
       match({
@@ -161,4 +164,31 @@ describe("hero-aware performance and personal coaching", () => {
     );
     expect(gameCoaching(match(), sparse, undefined).weakest).toBeUndefined();
   });
+});
+
+it("maps the full app scale to current Deadlock ranks and divisions", () => {
+  expect(performanceRank(0).label).toBe("Initiate I");
+  expect(performanceRank(100).label).toBe("Eternus VI");
+  expect(performanceRank(50).label).toBe("Ritualist IV");
+  expect(performanceRank(50).next).toBe("Ritualist V");
+  expect(performanceRank(100).next).toBeNull();
+  for (let score = 0; score <= 100; score++) {
+    const r = performanceRank(score);
+    expect(r.tier).toBeGreaterThanOrEqual(1);
+    expect(r.tier).toBeLessThanOrEqual(11);
+    expect(r.division).toBeGreaterThanOrEqual(1);
+    expect(r.division).toBeLessThanOrEqual(6);
+  }
+});
+it("validates only measured ranked games with real, valid badge divisions", () => {
+  const games = [
+    match({ match_mode: 4, ranked_display_badge: 64 }),
+    match({ match_id: 2, ranked_display_badge: 116 }),
+    match({ match_id: 3, match_mode: 4, ranked_display_badge: 70 }),
+  ];
+  const check = ratingValidation(
+    rateHistory(games, { [referenceKey(games[0])]: ref }).rated,
+  );
+  expect(check.count).toBe(1);
+  expect(check.tierError).not.toBeNull();
 });

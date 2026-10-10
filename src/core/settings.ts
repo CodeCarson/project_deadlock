@@ -11,7 +11,43 @@ const legacyNames: Record<string, string> = {
 };
 /** Upgrade only untouched Phase 1 placeholders. Custom rules and existing choices are preserved. */
 export function migrateSettings(raw: unknown): Settings {
-  const settings = settingsSchema.parse(raw);
+  let settings = settingsSchema.parse(raw);
+  if (!settings.combinedBreakables) {
+    const boxes = settings.rules.find((r) => r.id === "boxes");
+    const statues = settings.rules.find((r) => r.id === "statues");
+    const same =
+      boxes &&
+      statues &&
+      [
+        "firstSpawn",
+        "respawnSeconds",
+        "mode",
+        "repeatSeconds",
+        "location",
+      ].every(
+        (k) =>
+          boxes[k as keyof typeof boxes] === statues[k as keyof typeof statues],
+      );
+    settings = settingsSchema.parse({
+      ...settings,
+      combinedBreakables: true,
+      rules: settings.rules
+        .filter((r) => !(same && r.id === "statues"))
+        .map((r) =>
+          r.id === "boxes" &&
+          ["Boxes", "Boxes & golden statues"].includes(r.name)
+            ? {
+                ...r,
+                name: "Boxes & golden statues",
+                enabled: same ? r.enabled || statues!.enabled : r.enabled,
+                confirmed: same
+                  ? r.confirmed && statues!.confirmed
+                  : r.confirmed,
+              }
+            : r,
+        ),
+    });
+  }
   if (settings.presetRevision >= defaultSettings.presetRevision)
     return settings;
   return settingsSchema.parse({
@@ -19,7 +55,8 @@ export function migrateSettings(raw: unknown): Settings {
     presetRevision: defaultSettings.presetRevision,
     rules: settings.rules.map((rule) => {
       const isPlaceholder =
-        legacyNames[rule.id] === rule.name &&
+        (legacyNames[rule.id] === rule.name ||
+          (rule.id === "boxes" && rule.name === "Boxes & golden statues")) &&
         rule.firstSpawn === null &&
         rule.repeatSeconds === null &&
         rule.respawnSeconds === null &&
@@ -45,7 +82,9 @@ export function restoreTimerDefaults(settings: Settings): Settings {
     presetRevision: defaultSettings.presetRevision,
     rules: [
       ...structuredClone(defaultSettings.rules),
-      ...settings.rules.filter((rule) => !builtins.has(rule.id)),
+      ...settings.rules.filter(
+        (rule) => !builtins.has(rule.id) && rule.id !== "statues",
+      ),
     ],
   });
 }

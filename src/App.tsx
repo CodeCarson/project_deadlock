@@ -43,7 +43,13 @@ import {
   type TimerSnapshot,
 } from "./core/schema";
 import { formatClock, parseClock } from "./core/timer";
-import { notify, playSound, unlockAudio } from "./core/audio";
+import {
+  notify,
+  playSound,
+  unlockAudio,
+  availableVoices,
+  speak,
+} from "./core/audio";
 import { RuleEditor } from "./components/RuleEditor";
 import { ClockCaptureSettings } from "./components/ClockCaptureSettings";
 const PlayerDashboard = lazy(() =>
@@ -59,7 +65,6 @@ const navigation: { name: Page; icon: LucideIcon; later?: boolean }[] = [
   { name: "Stats", icon: Activity },
   { name: "Team Planner", icon: Users },
   { name: "Live Match", icon: Crosshair },
-  { name: "Settings", icon: Settings2 },
 ];
 const emptyTimer: TimerSnapshot = {
   status: "stopped",
@@ -92,6 +97,16 @@ export default function App() {
   const [confirmDefaults, setConfirmDefaults] = useState(false);
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [voices, setVoices] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    const refresh = () => {
+      void availableVoices().then(setVoices);
+    };
+    refresh();
+    window.speechSynthesis?.addEventListener("voiceschanged", refresh);
+    return () =>
+      window.speechSynthesis?.removeEventListener("voiceschanged", refresh);
+  }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let disposed = false;
@@ -240,6 +255,10 @@ export default function App() {
           <option value="chime">Soft chime</option>
           <option value="pulse">Radar pulse</option>
           <option value="bell">Clear bell</option>
+          <option value="knock">Door knock</option>
+          <option value="radio">Radio signal</option>
+          <option value="glass">Crystal glass</option>
+          <option value="whistle">Night whistle</option>
         </select>
       </div>
       <div className="setting-line">
@@ -280,8 +299,71 @@ export default function App() {
         />
         Speak event announcements
       </label>
+      <div className="setting-line">
+        <label htmlFor="voice-style">Voice</label>
+        <select
+          id="voice-style"
+          value={settings.voiceStyle}
+          disabled={busy}
+          onChange={(e) =>
+            change({
+              voiceStyle: e.target.value as Settings["voiceStyle"],
+              voiceId: "",
+            })
+          }
+        >
+          <option value="operator">The Operator · lower voice</option>
+          <option value="lookout">The Lookout · brighter voice</option>
+        </select>
+      </div>
+      <div className="setting-line">
+        <label htmlFor="installed-voice">Installed voice</label>
+        <select
+          id="installed-voice"
+          value={settings.voiceId}
+          disabled={busy}
+          onChange={(e) => change({ voiceId: e.target.value })}
+        >
+          <option value="">Choose automatically</option>
+          {voices.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="setting-line">
+        <label htmlFor="alert-speed">Alert speed</label>
+        <select
+          id="alert-speed"
+          value={settings.alertSpeed}
+          disabled={busy}
+          onChange={(e) => change({ alertSpeed: Number(e.target.value) })}
+        >
+          {[0.75, 1, 1.25, 1.35, 1.5, 1.75, 2].map((v) => (
+            <option key={v} value={v}>
+              {v}×{v === 1.35 ? " · default" : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button
+        className="button secondary full"
+        disabled={testing}
+        onClick={() => {
+          setTesting(true);
+          void speak(settings, "Bridge buffs ready")
+            .then(() => setNotice("Voice preview played"))
+            .catch((e) => setError(e.message))
+            .finally(() => setTesting(false));
+        }}
+      >
+        Test voice
+      </button>
       <small className="muted">
-        Speech uses voices installed on your computer.
+        Uses installed Windows voices, usually David and Zira. If only one is
+        installed, add another in Windows speech settings. Speed also shortens
+        sound cues.
       </small>
     </>
   );
@@ -396,7 +478,7 @@ export default function App() {
             <span>COMPANION</span>
           </div>
         </div>
-        <span className="nav-label">YOUR PLAYBOOK</span>
+
         <nav aria-label="Main navigation">
           {navigation.map(({ name, icon: Icon, later }) => (
             <button
@@ -416,16 +498,6 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="phase-card">
-            <span className="phase-chip">PHASE 03</span>
-            <h3>Built for your next match.</h3>
-            <p>
-              Your stats. Your reminders.
-              <br />
-              Stay one step ahead.
-            </p>
-            <div className="tiny-line" />
-          </div>
           <div className="runtime">
             <Monitor size={15} />
             <span>
@@ -433,7 +505,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.5.0 · Independent community tool</span>
+          <span className="version">v0.6.0 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -443,7 +515,13 @@ export default function App() {
             <strong>{page}</strong>
           </div>
           <div className="topbar-right">
-            <span className="build-badge">EARLY ACCESS</span>
+            <button
+              className={`button secondary small ${page === "Settings" ? "selected" : ""}`}
+              aria-label="Settings"
+              onClick={() => setPage("Settings")}
+            >
+              <Settings2 size={16} /> Settings
+            </button>
             <span className="divider" />
             <span className="desktop-label">
               <Shield size={14} />
@@ -468,10 +546,12 @@ export default function App() {
                 <div>
                   <span className="eyebrow">
                     {page === "Live Match"
-                      ? "STAY AHEAD OF THE CLOCK"
+                      ? "THE CURSED APPLE · FIELD CLOCK"
                       : page === "Settings"
-                        ? "MAKE IT YOURS"
-                        : "YOUR SECOND-MONITOR COMPANION"}
+                        ? "THE OPERATOR’S DESK"
+                        : page === "Team Planner"
+                          ? "THE CURSED APPLE · SQUAD ROOM"
+                          : "THE CURSED APPLE · MATCH ARCHIVE"}
                   </span>
                   <h1>
                     {page === "Live Match"
@@ -482,7 +562,7 @@ export default function App() {
                   </h1>
                   <p>
                     {page === "Live Match"
-                      ? "Focus on the fight. We’ll keep an eye on the time."
+                      ? "Your clock, upcoming objectives, and reminders."
                       : page === "Settings"
                         ? "Tune your reminders to the way you play."
                         : page === "Team Planner"
@@ -552,7 +632,9 @@ export default function App() {
                           {formatClock(timer.seconds)}
                         </div>
                         <span className="clock-caption">
-                          YOUR MATCH. YOUR PACE.
+                          {settings.automaticTracking
+                            ? "Local timer · sparse clock checks"
+                            : "Start manually or configure live tracking"}
                         </span>
                       </div>
                       {settings.automaticTracking && (
@@ -561,6 +643,48 @@ export default function App() {
                             "Automatic tracking requires the desktop app"}
                         </p>
                       )}
+                      <div className="live-tracking-controls">
+                        {settings.captureRegion ? (
+                          <button
+                            className="button secondary small"
+                            disabled={busy || !isDesktop}
+                            onClick={() => {
+                              void (async () => {
+                                await unlockAudio();
+                                if (!settingsRef.current.automaticTracking)
+                                  await save({
+                                    ...settingsRef.current,
+                                    automaticTracking: true,
+                                  });
+                                await bridge.resumeAutomaticTracking();
+                                setNotice(
+                                  "Live tracking resumed — waiting for the game clock",
+                                );
+                              })().catch((e) => setError(e.message));
+                            }}
+                          >
+                            {timer.detection?.manualOverride ||
+                            timer.status === "paused"
+                              ? "Resume live tracking"
+                              : settings.automaticTracking
+                                ? "Recheck game clock"
+                                : "Enable live tracking"}
+                          </button>
+                        ) : (
+                          <button
+                            className="button secondary small"
+                            onClick={() => setPage("Settings")}
+                          >
+                            Set up live tracking
+                          </button>
+                        )}
+                        {timer.detection?.manualOverride && (
+                          <small>
+                            Manual control is active. Resume live tracking to
+                            follow the game again.
+                          </small>
+                        )}
+                      </div>
                       <div className="clock-buttons">
                         <button
                           className="button primary large"
@@ -734,7 +858,26 @@ export default function App() {
                             {settings.volume === 0 ? "MUTED" : "SOUND ON"}
                           </span>
                         </div>
-                        {audioControls}
+                        <div className="quick-audio">
+                          <button
+                            className="button secondary"
+                            onClick={() => void testAudio()}
+                            disabled={testing}
+                          >
+                            <Volume2 size={16} />
+                            {testing ? "Playing…" : "Test sound"}
+                          </button>
+                          <button
+                            className="text-button"
+                            onClick={() => setPage("Settings")}
+                          >
+                            Voice, speed & sound <ArrowRight size={14} />
+                          </button>
+                        </div>
+                        <small>
+                          {settings.sound} · {Math.round(settings.volume * 100)}
+                          % volume · {settings.alertSpeed}×
+                        </small>
                       </section>
                     </div>
                   </div>
@@ -816,12 +959,31 @@ export default function App() {
                       }).then(() => {})
                     }
                   />
+                  <section className="panel settings-panel">
+                    <h2>Match archive updates</h2>
+                    <label className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={settings.autoRefreshStats}
+                        disabled={busy}
+                        onChange={(e) =>
+                          change({ autoRefreshStats: e.target.checked })
+                        }
+                      />
+                      Check for new matches every ten minutes outside a running
+                      match
+                    </label>
+                    <small>
+                      Indexed games are merged into the local archive. Steam
+                      access is configured in Stats.
+                    </small>
+                  </section>
                   <div className="settings-grid">
                     <section className="panel settings-panel">
                       <div className="section-heading">
                         <div>
                           <h2>Sound & notifications</h2>
-                          <p>A little heads-up goes a long way.</p>
+                          <p>Short announcements. Your voice and pace.</p>
                         </div>
                         <Volume2 size={21} className="muted" />
                       </div>
@@ -988,11 +1150,10 @@ export default function App() {
                   <div className="panel settings-info">
                     <Shield size={24} />
                     <div>
-                      <h3>Second-monitor only, by design.</h3>
+                      <h3>Local clock capture</h3>
                       <p>
                         No game memory access, injection, gameplay automation,
-                        or overlay. The match clock is controlled and
-                        synchronised by you.
+                        or overlay. Clock images stay on your PC.
                       </p>
                     </div>
                   </div>
@@ -1017,6 +1178,7 @@ export default function App() {
                 >
                   <PlayerDashboard
                     view="Stats"
+                    autoRefresh={settings.autoRefreshStats}
                     savedFilters={settings.playerFilters}
                     research={settings.playerResearch[settings.accountId]}
                     onResearchChange={(research) =>

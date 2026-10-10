@@ -28,6 +28,8 @@ const heroes = [
   { id: 12, name: "Kelvin", hero_type: "brawler" },
   { id: 13, name: "Haze", hero_type: "assassin" },
   { id: 18, name: "Mo & Krill", hero_type: "brawler" },
+  { id: 27, name: "Yamato", hero_type: "assassin" },
+  { id: 35, name: "Viscous", hero_type: "mystic" },
 ];
 const distribution = (values: number[]) => ({
   avg: values[4],
@@ -102,7 +104,7 @@ async function fixtures(page: Page) {
     else if (p.endsWith("/hero-comb-stats"))
       data = [
         {
-          hero_ids: heroes.map((h) => h.id),
+          hero_ids: heroes.slice(0, 6).map((h) => h.id),
           wins: 65,
           losses: 35,
           matches: 100,
@@ -139,7 +141,7 @@ test("one Stats workspace gives hero-aware game coaching, a saved Companion esti
     page
       .getByRole("navigation", { name: "Main navigation" })
       .getByRole("button"),
-  ).toHaveCount(4);
+  ).toHaveCount(3);
   await page
     .getByRole("button", { name: "Calculate Companion rank", exact: true })
     .click();
@@ -152,16 +154,14 @@ test("one Stats workspace gives hero-aware game coaching, a saved Companion esti
   );
   await expect(page.locator(".top-hero-card").last()).toContainText("Abrams");
   await page.getByLabel("Match to review").selectOption("5001");
-  await expect(page.locator(".match-coaching")).toContainText(
-    "What did not go as well",
-  );
+  await expect(page.locator(".match-coaching")).toContainText("Review this");
   await expect(page.locator(".match-coaching")).toContainText("Deaths");
   await expect(page.locator(".match-coaching")).toContainText("brawler");
   await page
     .getByRole("button", { name: "Add this focus to my note", exact: true })
     .click();
   await expect(page.getByLabel("Match review note")).toHaveValue(
-    /Abrams.*escape route/,
+    /Abrams.*route back to cover/,
   );
   await page
     .getByRole("button", { name: "Save review note", exact: true })
@@ -171,7 +171,7 @@ test("one Stats workspace gives hero-aware game coaching, a saved Companion esti
   await expect(page.getByText(/Saved estimate:/)).toBeVisible();
   await page.getByLabel("Match to review").selectOption("5001");
   await expect(page.getByLabel("Match review note")).toHaveValue(
-    /Abrams.*escape route/,
+    /Abrams.*route back to cover/,
   );
   await page.setViewportSize({ width: 650, height: 900 });
   await expect
@@ -234,5 +234,35 @@ test("team planner resolves Steam suggestions, honors a preferred hero and shows
     page.getByText("Each team position must use a different Steam account.", {
       exact: true,
     }),
+  ).toBeVisible();
+});
+test("planner comfort choices and exclusions produce different personal alternatives from collected history", async ({
+  page,
+}) => {
+  await profile(page);
+  await page.getByRole("button", { name: "Team Planner", exact: true }).click();
+  await expect(page.locator(".planner-slot").first()).toContainText(
+    "Tester 1234",
+  );
+  await page.getByLabel("Position 1 comfort hero").selectOption("11");
+  await page.getByLabel("Exclude a hero", { exact: true }).selectOption("6");
+  await page.getByLabel("Selection style").selectOption("explore");
+  await page
+    .getByRole("button", { name: "Recommend team composition", exact: true })
+    .click();
+  await expect(page.locator(".recommended-comp")).toHaveCount(3);
+  const picks = await page
+    .locator(".recommended-comp .comp-picks article:first-child h3")
+    .allTextContents();
+  expect(new Set(picks).size).toBeGreaterThan(1);
+  const all = await page
+    .locator(".recommended-comp .comp-picks h3")
+    .allTextContents();
+  expect(all).not.toContain("Abrams");
+  await page.reload();
+  await page.getByRole("button", { name: "Team Planner", exact: true }).click();
+  await expect(page.getByLabel("Selection style")).toHaveValue("explore");
+  await expect(
+    page.getByRole("button", { name: "Abrams excluded ×", exact: true }),
   ).toBeVisible();
 });

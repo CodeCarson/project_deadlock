@@ -82,6 +82,7 @@ export class ClockReader {
     if (this.enabled) this.message = "Waiting for a readable clock";
   }
   nextSampleDelay() {
+    if (!this.enabled || this.override) return 5000;
     return Math.max(100, this.nextAt - this.now());
   }
   reading(text: string, confidence: number, observedAt: number) {
@@ -98,12 +99,7 @@ export class ClockReader {
       return;
     }
     const old = this.previous;
-    const newMatch =
-      old &&
-      old.seconds > 30 &&
-      seconds <= 15 &&
-      this.lostAt !== undefined &&
-      this.now() - this.lostAt >= 15000;
+    const newMatch = old && old.seconds > 60 && seconds <= 15;
     if (newMatch) {
       const c = this.candidate;
       this.engine.command({ type: "pause" });

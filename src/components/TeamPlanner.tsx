@@ -11,7 +11,8 @@ import {
   type Synergy,
   type Composition,
 } from "../core/api";
-import { recentRatedScope, type Evidence } from "../core/performance";
+import { type Evidence } from "../core/performance";
+import { heroRoles } from "../core/hero-guide";
 import { planTeam, playerHeroFits, type PlannerPlayer } from "../core/planner";
 import { winInterval } from "../core/coaching";
 import { loadEvidence } from "./evidence";
@@ -28,13 +29,16 @@ export function TeamPlanner({
   onSave: (value: Settings["planner"]) => Promise<void>;
 }) {
   const [mode, setMode] = useState<1 | 4>(saved.mode),
-    [cohort, setCohort] = useState(saved.cohort);
+    [cohort, setCohort] = useState(saved.cohort),
+    [preference, setPreference] = useState(saved.preference),
+    [excluded, setExcluded] = useState<number[]>(saved.excluded);
   const [slots, setSlots] = useState<Slot[]>(
     Array.from({ length: 6 }, (_, i) => ({
       input: saved.accountIds[i] || (i === 0 ? accountId : ""),
       name: `Open position ${i + 1}`,
       matches: [],
       lock: saved.locks[i] || undefined,
+      favorites: saved.favorites[i],
       loading: false,
       error: "",
     })),
@@ -137,11 +141,11 @@ export function TeamPlanner({
         compositions = z.array(compositionSchema).parse(results[1].data);
       const roster = active.map((p) => ({
         ...p,
-        matches: recentRatedScope(p.matches, mode),
+        matches: p.matches,
       }));
       const candidates = roster.flatMap((p) => {
         const preferred = playerHeroFits(p, {}, mode)
-          .slice(0, 4)
+          .slice(0, 8)
           .map((h) => h.heroId);
         return preferred.flatMap((id) =>
           p.matches.filter((m) => m.hero_id === id).slice(0, 10),
@@ -165,6 +169,7 @@ export function TeamPlanner({
         compositions,
         reference.evidence,
         mode,
+        { preference, excluded },
       );
       if (!picks.length)
         throw new Error(
@@ -175,6 +180,9 @@ export function TeamPlanner({
         cohort,
         accountIds: slots.map((p) => (p.accountId ? String(p.accountId) : "")),
         locks: slots.map((p) => p.lock ?? 0),
+        favorites: slots.map((p) => p.favorites ?? []),
+        preference,
+        excluded,
       });
       if (token !== generation.current) return;
       setPairs(synergies);
@@ -203,8 +211,8 @@ export function TeamPlanner({
       <section className="panel">
         <h2>Build around your team</h2>
         <p>
-          Add yourself and your teammates by Steam name or ID. Lock a preferred
-          pick if needed. Leave open positions blank to suggest fills.
+          Use your collected history, choose comfort heroes, and leave empty
+          positions for suggested fills.
         </p>
         <div className="history-controls">
           <label>
@@ -235,6 +243,57 @@ export function TeamPlanner({
               <option value="elite">Ascendant / Eternus games</option>
             </select>
           </label>
+          <label>
+            Selection style
+            <select
+              aria-label="Selection style"
+              value={preference}
+              onChange={(e) => {
+                invalidate();
+                setPreference(e.target.value as typeof preference);
+              }}
+            >
+              <option value="balanced">Balanced</option>
+              <option value="comfort">Comfort picks first</option>
+              <option value="explore">Explore more heroes</option>
+            </select>
+          </label>
+          <label>
+            Exclude a hero
+            <select
+              aria-label="Exclude a hero"
+              value=""
+              onChange={(e) => {
+                invalidate();
+                setExcluded((v) => [
+                  ...new Set([...v, Number(e.target.value)]),
+                ]);
+              }}
+            >
+              <option value="">Choose a hero…</option>
+              {heroes
+                .filter((h) => !excluded.includes(h.id))
+                .map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </div>
+        <div className="hero-chips">
+          {excluded.map((id) => (
+            <button
+              className="hero-chip"
+              key={id}
+              onClick={() => {
+                invalidate();
+                setExcluded((v) => v.filter((h) => h !== id));
+              }}
+            >
+              {name(id)} excluded ×
+            </button>
+          ))}
         </div>
       </section>
       <div className="planner-roster">
@@ -266,11 +325,60 @@ export function TeamPlanner({
             />
             {slot.accountId && (
               <p>
-                {slot.name} · {recentRatedScope(slot.matches, mode).length}{" "}
-                recent scored games · account {slot.accountId}
+                {slot.name} ·{" "}
+                {slot.matches.filter((m) => m.game_mode === mode).length}{" "}
+                collected mode games · account {slot.accountId}. Older games may
+                still be missing.
               </p>
             )}
             {slot.error && <p role="status">{slot.error}</p>}
+            <label>
+              Comfort pool
+              <select
+                aria-label={`Position ${i + 1} comfort hero`}
+                value=""
+                onChange={(e) => {
+                  invalidate();
+                  update(i, {
+                    favorites: [
+                      ...new Set([
+                        ...(slot.favorites ?? []),
+                        Number(e.target.value),
+                      ]),
+                    ].slice(0, 12),
+                  });
+                }}
+              >
+                <option value="">Add a hero…</option>
+                {heroes
+                  .filter(
+                    (h) =>
+                      !(slot.favorites ?? []).includes(h.id) &&
+                      !excluded.includes(h.id),
+                  )
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <div className="hero-chips">
+              {slot.favorites?.map((id) => (
+                <button
+                  className="hero-chip"
+                  key={id}
+                  onClick={() => {
+                    invalidate();
+                    update(i, {
+                      favorites: slot.favorites?.filter((h) => h !== id),
+                    });
+                  }}
+                >
+                  {name(id)} ×
+                </button>
+              ))}
+            </div>
             <label>
               Preferred hero lock
               <select
@@ -324,7 +432,7 @@ export function TeamPlanner({
                 <span className="eyebrow">
                   {index === 0 ? "RECOMMENDED" : "ALTERNATIVE"}
                 </span>
-                <h2>Composition {index + 1}</h2>
+                <h2>{index === 0 ? "Best fit" : `Alternative ${index}`}</h2>
               </div>
               <strong>{plan.score.toFixed(1)} / 100 fit</strong>
             </div>
@@ -332,6 +440,21 @@ export function TeamPlanner({
               {comp
                 ? `Recorded complete lineup: ${comp.matches} matches, ${((comp.wins / (comp.wins + comp.losses)) * 100).toFixed(1)}% scored win rate${interval ? `, 95% interval ${interval.low.toFixed(1)}–${interval.high.toFixed(1)}%` : ""}.`
                 : "Generated from player fit and recorded hero pairs; no qualifying full-lineup record is available."}
+            </p>
+            {index > 0 && (
+              <small>
+                Alternative player picks are prioritised when unlocked. Check
+                unfamiliar picks below.
+              </small>
+            )}
+            <p className="role-check">
+              Roles: {plan.roles.covered.join(" · ") || "unknown"}
+              {plan.roles.missing.length
+                ? ` · Check ${plan.roles.missing.join(" / ")} coverage`
+                : " · Core roles covered"}
+              {plan.roles.unknown
+                ? ` · ${plan.roles.unknown} hero kits unclassified`
+                : ""}
             </p>
             <div className="comp-picks">
               {plan.ids.map((id, i) => {
@@ -346,15 +469,15 @@ export function TeamPlanner({
                     </small>
                     <h3>{name(id)}</h3>
                     <p>
-                      {hero?.description?.role ??
-                        hero?.hero_type ??
+                      {heroRoles(hero).join(" · ") ||
+                        hero?.hero_type ||
                         "Role information unavailable"}
                     </p>
                     <small>
                       {fit
                         ? `${fit.count} personal games · ${fit.wins} wins · ${fit.measured ? "hero-adjusted performance fit" : "result-based provisional fit"} ${fit.score.toFixed(1)}`
                         : active[i].accountId
-                          ? "Unfamiliar pick: no three-game sample in this recent scope."
+                          ? "Unfamiliar pick: no three-game sample in collected history."
                           : "Suggested fill for an open team position."}
                       {active[i].lock ? " · locked" : ""}
                     </small>

@@ -36,10 +36,10 @@ const n = (v: number | null, d = 1) =>
   v === null ? "—" : v.toLocaleString(undefined, { maximumFractionDigits: d });
 const actions = {
   deaths:
-    "Review your last three deaths: note the information you had, your escape route and whether the fight was needed. Choose one avoidable pattern to address next game.",
+    "Review one death. Next game, count visible threats and choose an escape route before committing.",
   combat:
-    "Review fights where you arrived late or had no impact. Look for one opportunity to coordinate an arrival with a teammate; this rate alone cannot judge your role.",
-  farm: "Review gaps between waves and rotations. Plan your next resource route before leaving lane, and avoid abandoning reachable farm for uncertain fights.",
+    "Arrive with a teammate before the next objective fight, with your key ability ready.",
+  farm: "Clear the next reachable wave before rotating. Take a nearby camp along that route.",
 };
 export function ImprovementCenter({
   matches,
@@ -135,10 +135,7 @@ export function ImprovementCenter({
         <div>
           <span className="eyebrow">YOUR NEXT TEN GAMES</span>
           <h2>Improvement plan</h2>
-          <p>
-            Balanced review of survival, combat, farming and hero results.
-            Comparisons use your own scored games, not an inferred skill rating.
-          </p>
+          <p>Pick one focus and measure it across your next ten games.</p>
         </div>
         <label>
           Analysis mode
@@ -193,7 +190,7 @@ export function ImprovementCenter({
             <p>
               {trend.window < 5
                 ? "At least ten scored games are needed for two five-game windows. Start with a death review and a short decision note."
-                : "No measured rate shows a relative regression of at least 10% with adequate samples. Keep one measurable focus instead of drawing conclusions from small fluctuations."}
+                : "No clear regression of 10% or more. Keep your current focus and collect more games."}
             </p>
           </>
         )}

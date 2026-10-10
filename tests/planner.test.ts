@@ -105,3 +105,38 @@ describe("evidence-based team planning", () => {
     ).toThrow("6 team slots");
   });
 });
+
+it("uses older collected hero experience, exclusions, comfort choices and distinct player alternatives", () => {
+  const roster = [
+    {
+      ...players[0],
+      favorites: [7],
+      matches: [
+        ...players[0].matches,
+        ...player(9, 7).matches,
+        ...player(10, 8).matches,
+      ],
+    },
+    ...players.slice(1),
+  ];
+  const plans = planTeam(roster, heroes, pairs, comps, {}, 1, {
+    preference: "comfort",
+    excluded: [8],
+  });
+  expect(plans[0].ids[0]).toBe(7);
+  expect(plans.every((p) => !p.ids.includes(8))).toBe(true);
+  expect(new Set(plans.map((p) => p.ids[0])).size).toBeGreaterThan(1);
+  expect(plans[0].fits[0]?.count).toBe(10);
+});
+it("reports core team-role gaps without inventing kits for unknown heroes", () => {
+  const catalog = heroes.map((h, i) => ({
+    ...h,
+    name: ["Abrams", "Dynamo", "Haze"][i] ?? h.name,
+    hero_type: i === 0 ? "brawler" : undefined,
+  }));
+  const result = planTeam(players, catalog, pairs, comps, {}, 1)[0];
+  expect(result.roles.covered).toEqual(
+    expect.arrayContaining(["frontline", "control", "damage", "sustain"]),
+  );
+  expect(result.roles.unknown).toBe(3);
+});

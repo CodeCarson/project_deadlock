@@ -123,3 +123,19 @@ describe("settings upgrades and timer defaults", () => {
     });
   });
 });
+
+it("combines matching old breakable reminders and preserves intentionally different custom schedules", () => {
+  const base = structuredClone(defaultSettings);
+  base.combinedBreakables = false;
+  const box = { ...base.rules.find((r) => r.id === "boxes")!, name: "Boxes" };
+  const statue = { ...box, id: "statues", name: "Golden statues" };
+  base.rules = [box, statue, reminder];
+  const combined = migrateSettings(base);
+  expect(combined.rules.filter((r) => r.category === "breakable")).toHaveLength(
+    1,
+  );
+  expect(combined.rules[0].name).toBe("Boxes & golden statues");
+  expect(combined.rules.at(-1)).toEqual(reminder);
+  base.rules[1].respawnSeconds = 241;
+  expect(migrateSettings(base).rules).toHaveLength(3);
+});

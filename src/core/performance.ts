@@ -6,7 +6,8 @@ import {
   type MatchMetadata,
 } from "./api.js";
 import { finalSample, performance } from "./coaching.js";
-export const MODEL_VERSION = 1;
+export const MODEL_VERSION = 2;
+import { heroAction, heroRoles } from "./hero-guide.js";
 export const referenceKey = (m: Match) =>
   `${m.hero_id}-${m.game_mode}-${durationBand(m.match_duration_s ?? 0)}`;
 export const durationBand = (seconds: number) =>
@@ -100,16 +101,68 @@ export function matchScore(m: Match, evidence: Evidence) {
     reference: r,
   };
 }
+export const rankNames = [
+  "Initiate",
+  "Seeker",
+  "Acolyte",
+  "Sentinel",
+  "Mystic",
+  "Ritualist",
+  "Emissary",
+  "Oracle",
+  "Phantom",
+  "Ascendant",
+  "Eternus",
+];
+// Names match current assets; the estimate's scale is an app mapping, not Valve MMR.
+export function performanceRank(score: number) {
+  const value = clamp(score),
+    position = Math.min(65.999999, (value / 100) * 66);
+  const tier = Math.floor(position / 6),
+    division = Math.floor(position % 6) + 1;
+  const progress = value >= 100 ? 100 : (position % 1) * 100;
+  return {
+    name: rankNames[tier],
+    tier: tier + 1,
+    division,
+    label: `${rankNames[tier]} ${["I", "II", "III", "IV", "V", "VI"][division - 1]}`,
+    progress,
+    next:
+      value >= 100
+        ? null
+        : performanceRankLabel(Math.min(65, Math.floor(position) + 1)),
+  };
+}
+function performanceRankLabel(position: number) {
+  return `${rankNames[Math.floor(position / 6)]} ${["I", "II", "III", "IV", "V", "VI"][position % 6]}`;
+}
 export function ratingBand(score: number) {
-  return score < 35
-    ? "Developing"
-    : score < 50
-      ? "Building"
-      : score < 65
-        ? "Established"
-        : score < 80
-          ? "Advanced"
-          : "Exceptional";
+  return performanceRank(score).label;
+}
+export function ratingValidation(
+  rated: ReturnType<typeof rateHistory>["rated"],
+) {
+  const games = rated.filter(
+    (g) =>
+      g.match.match_mode === 4 &&
+      (g.match.ranked_display_badge ?? 0) >= 11 &&
+      (g.match.ranked_display_badge ?? 0) <= 116 &&
+      [1, 2, 3, 4, 5, 6].includes((g.match.ranked_display_badge ?? 0) % 10),
+  );
+  return {
+    count: games.length,
+    tierError: games.length
+      ? games.reduce(
+          (sum, g) =>
+            sum +
+            Math.abs(
+              performanceRank(g.score).tier -
+                Math.floor(g.match.ranked_display_badge! / 10),
+            ),
+          0,
+        ) / games.length
+      : null,
+  };
 }
 export function recentRatedScope(
   matches: Match[],
@@ -163,19 +216,13 @@ export function rateHistory(matches: Match[], evidence: Evidence) {
   return { overall, heroes, rated, unrated: matches.length - rated.length };
 }
 const prompts = {
-  deaths:
-    "Before committing, identify your escape route and count visible threats. Review one death immediately after the game and record the information you missed.",
-  combat:
-    "Arrive with a teammate before the next objective fight. Pick one fight to enter on time with your key ability ready; judge the arrival, not just the kill count.",
-  farm: "Plan a wave-to-camp route before leaving lane. At ten minutes, check whether a rotation cost you a reachable wave and adjust the next route.",
-  economy:
-    "Protect collected souls and spend before the next contested objective. Check your route after a death rather than forcing another fight while behind.",
-  damage:
-    "Use one fight to track ability uptime and target access. Stay with your team long enough to apply your hero's damage instead of taking an isolated trade.",
-  objectives:
-    "After a won fight, identify a safe tower, Walker or other objective with your team. Review one conversion opportunity rather than padding damage.",
-  healing:
-    "Keep a teammate in range when your defensive abilities are available. Review one fight where positioning stopped you from helping them.",
+  deaths: "",
+  combat: "",
+  farm: "",
+  economy: "",
+  damage: "",
+  objectives: "",
+  healing: "",
 };
 export function gameCoaching(
   match: Match,
@@ -323,13 +370,16 @@ export function gameCoaching(
       "boss_damage_per_min",
       null,
     );
-    add(
-      "healing",
-      "Teammate healing / min",
-      sample.teammate_healing === null ? null : sample.teammate_healing / mins,
-      "teammate_healing_per_min",
-      null,
-    );
+    if (heroRoles(hero).includes("sustain"))
+      add(
+        "healing",
+        "Teammate healing / min",
+        sample.teammate_healing === null
+          ? null
+          : sample.teammate_healing / mins,
+        "teammate_healing_per_min",
+        null,
+      );
   }
   rows.sort((a, b) => a.score - b.score);
   const weakest = rows[0];
@@ -345,23 +395,18 @@ export function gameCoaching(
     prior: prior.length,
     title: weakest
       ? weakest.score < 40
-        ? "What did not go as well"
-        : "Your next opportunity"
-      : "A decision to review",
+        ? "Review this"
+        : "Next opportunity"
+      : "One decision to review",
     action: weakest
-      ? prompts[weakest.key] +
-        ({
-          brawler:
-            " As a brawler, time your commitment with teammates who can follow up.",
-          assassin:
-            " As an assassin, plan your entry and exit before looking for a backline angle.",
-          marksman:
-            " As a marksman, look for a firing angle with cover and teammate support.",
-          mystic:
-            " As a mystic, plan the fight around your important cooldowns and allies' positioning.",
-        }[hero?.hero_type as "brawler" | "assassin" | "marksman" | "mystic"] ??
-          "")
-      : "Review your last death or lowest-impact fight. Write what you knew before committing, then choose one decision to change next game. There is not enough comparable data to identify a statistical weakness yet.",
+      ? heroAction(hero, weakest.key)
+      : "Review one death: what information did you miss before committing?",
+    moment: player?.death_details
+      .filter(
+        (d) =>
+          d.game_time_s >= 900 && d.game_time_s < (match.match_duration_s ?? 0),
+      )
+      .sort((a, b) => (b.death_duration_s ?? 0) - (a.death_duration_s ?? 0))[0],
     role:
       hero?.description?.playstyle ??
       "Compare this hero with its own results; a single damage or kill total cannot judge every role.",

@@ -203,11 +203,6 @@ export function PostgameReview({
     <section className="panel postgame-review">
       <span className="eyebrow">TURN A RESULT INTO A PRACTICE PLAN</span>
       <h2>Postgame review</h2>
-      <p>
-        Choose a game and load its recorded details. Missing metadata stays
-        unavailable. This fetches existing provider data; it does not request a
-        new Steam replay.
-      </p>
       <div className="history-controls">
         <label>
           Match to review
@@ -242,7 +237,7 @@ export function PostgameReview({
                 #{match!.match_id} · {coaching.name}
               </span>
               <h3>Your next-game focus</h3>
-              <p>{coaching.identity}</p>
+              <small>{coaching.identity}</small>
             </div>
           </div>
           <div className="coaching-pair">
@@ -252,23 +247,28 @@ export function PostgameReview({
                 <p>
                   {coaching.weakest.label}:{" "}
                   <strong>{n(coaching.weakest.value)}</strong> versus{" "}
-                  {n(coaching.weakest.expected)} reference. Compared with{" "}
-                  {coaching.weakest.source}.{" "}
-                  {coaching.weakest.score >= 40
-                    ? "This is the least strong measured area, not proof that you played badly."
-                    : "This is an observed gap to review, not proof of an avoidable mistake."}
+                  {n(coaching.weakest.expected)} reference.
                 </p>
               ) : (
                 <p>
-                  No reliable statistical weakness is identifiable yet. Load a
-                  detailed review for hero-specific community comparisons.
+                  Not enough comparable games yet. Load details or recover older
+                  history.
                 </p>
               )}
             </article>
             <article>
               <h4>One change for next game</h4>
               <p>{coaching.action}</p>
-              <small>{coaching.role}</small>
+              {coaching.weakest?.key === "deaths" && coaching.moment && (
+                <small>
+                  Start with the death at{" "}
+                  {formatClock(coaching.moment.game_time_s)}
+                  {coaching.moment.death_duration_s != null
+                    ? ` (${Math.round(Math.min(coaching.moment.death_duration_s, Math.max(0, (match!.match_duration_s ?? 0) - coaching.moment.game_time_s)))}s dead)`
+                    : ""}
+                  .
+                </small>
+              )}
             </article>
           </div>
           <button
@@ -285,13 +285,16 @@ export function PostgameReview({
             Add this focus to my note
           </button>
           {reference && (
-            <p className="muted">
-              Community comparison: last 30 days · {reference.matches} indexed
-              hero games · fetched{" "}
-              {new Date(reference.fetchedAt).toLocaleString()}
-              {reference.stale ? " · saved offline data" : ""}. Quantile sample
-              counts are not separately reported.
-            </p>
+            <details className="coach-source">
+              <summary>Comparison source</summary>
+              <small>
+                {coaching.weakest?.source ?? "Hero reference"} ·{" "}
+                {reference.matches} indexed games · fetched{" "}
+                {new Date(reference.fetchedAt).toLocaleString()}
+                {reference.stale ? " · offline" : ""}. Stats show outcomes; they
+                cannot identify the cause of every decision.
+              </small>
+            </details>
           )}
         </section>
       )}

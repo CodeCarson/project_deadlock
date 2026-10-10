@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { type Match, type Hero, gameModeName } from "../core/api";
+import { type Match, type Hero, gameModeName, outcome } from "../core/api";
 import {
   rateHistory,
   recentRatedScope,
   MODEL_VERSION,
+  performanceRank,
+  ratingValidation,
   type Evidence,
 } from "../core/performance";
 import { loadEvidence } from "./evidence";
@@ -40,6 +42,19 @@ export function PerformanceRating({
   const scope = recentRatedScope(matches, mode),
     rating = rateHistory(scope, evidence),
     ready = rating.overall.count >= 10;
+  const last = research.ratingHistory.filter((r) => r.mode === mode).at(-1);
+  const badge = performanceRank(
+    ready ? rating.overall.score : (last?.score ?? 50),
+  );
+  const validation = ratingValidation(rating.rated);
+  const careerScope = matches.filter(
+    (m) =>
+      m.game_mode === mode &&
+      [1, 4].includes(m.match_mode ?? 0) &&
+      outcome(m) !== "unscored" &&
+      m.start_time * 1000 <= Date.now(),
+  );
+  const heroRating = rateHistory(careerScope, evidence);
   const name = (id: number) =>
     heroes.find((h) => h.id === id)?.name ?? `Hero ${id}`;
   const calculate = async () => {
@@ -48,7 +63,7 @@ export function PerformanceRating({
     setMessage("");
     try {
       const data = await loadEvidence(
-        scope,
+        [...scope, ...careerScope],
         () => token !== generation.current,
         (done, total) => {
           if (token === generation.current)
@@ -81,7 +96,7 @@ export function PerformanceRating({
                 mode,
                 at: Date.now(),
                 anchor,
-                model: MODEL_VERSION as 1,
+                model: MODEL_VERSION as 2,
               },
             ].slice(-50),
           });
@@ -95,14 +110,13 @@ export function PerformanceRating({
       if (token === generation.current) setBusy(false);
     }
   };
-  const last = research.ratingHistory.filter((r) => r.mode === mode).at(-1);
   return (
     <section className="panel companion-rating">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">YOUR COMPANION RANK</span>
-          <h2>Your performance & best heroes</h2>
-          <p>A hero-adjusted estimate for ranked and unranked players.</p>
+          <span className="eyebrow">COMPANION ESTIMATE</span>
+          <h2>Your estimated rank</h2>
+          <p>Recorded performance, using Deadlock’s rank names.</p>
         </div>
         <label>
           Rating mode
@@ -117,12 +131,26 @@ export function PerformanceRating({
         </label>
       </div>
       <div className="rating-summary">
-        <div className="rating-badge">
-          <strong>{ready ? rating.overall.band : "Uncalibrated"}</strong>
+        <div className="rating-badge" data-tier={badge.tier}>
+          <svg className="rank-emblem" viewBox="0 0 100 100" aria-hidden="true">
+            <path
+              d="M50 5 85 25 85 70 50 95 15 70 15 25Z M50 16 75 31 75 64 50 82 25 64 25 31Z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="m50 27 7 16 18 7-18 7-7 16-7-16-18-7 18-7Z"
+              fill="currentColor"
+            />
+          </svg>
+          <strong>{ready || last ? badge.label : "Obscurus"}</strong>
           <span>
             {ready
               ? `${rating.overall.score.toFixed(1)} / 100`
-              : `${scope.length} recent scored games available`}
+              : last
+                ? `Saved · ${last.score.toFixed(1)} / 100`
+                : `${scope.length} games available · calibration needed`}
           </span>
         </div>
         <div>
@@ -140,13 +168,33 @@ export function PerformanceRating({
           </button>
           {last && !ready && (
             <small>
-              Saved estimate: {last.score.toFixed(1)}/100 · {last.count} games ·{" "}
-              {new Date(last.at).toLocaleDateString()}. Recalculate for current
-              comparisons.
+              Saved estimate: {performanceRank(last.score).label} · {last.count}{" "}
+              games · {new Date(last.at).toLocaleDateString()}. Recalculate for
+              current comparisons.
             </small>
           )}
         </div>
       </div>
+      {ready && (
+        <div className="rank-progress">
+          <span>
+            {badge.next
+              ? `${badge.progress.toFixed(0)}% to ${badge.next}`
+              : "Top of the app scale"}
+          </span>
+          <progress
+            aria-label="Next performance division"
+            value={badge.progress}
+            max={100}
+          />
+        </div>
+      )}
+      {research.expectedTotal && matches.length < research.expectedTotal && (
+        <p className="coverage-warning">
+          Partial history: {matches.length} / {research.expectedTotal} reported
+          games. Recover older games above before judging your career record.
+        </p>
+      )}
       {ready && (
         <div className="coaching-grid">
           {(
@@ -166,9 +214,15 @@ export function PerformanceRating({
       )}
       {message && <p role="status">{message}</p>}
       <h3>Your best three heroes</h3>
-      {rating.heroes.length ? (
+      {heroRating.rated.length > 0 && (
+        <small>
+          {heroRating.rated.length} / {careerScope.length} collected scored
+          games compared.
+        </small>
+      )}
+      {heroRating.heroes.length ? (
         <div className="top-hero-grid">
-          {rating.heroes.slice(0, 3).map((h, i) => (
+          {heroRating.heroes.slice(0, 3).map((h, i) => (
             <article className="top-hero-card" key={h.heroId}>
               <span>
                 #{i + 1} · {name(h.heroId)}
@@ -190,62 +244,50 @@ export function PerformanceRating({
         </div>
       ) : (
         <p className="muted">
-          Calculate the rating to find your strongest measured heroes. Each hero
-          needs five rated games; fewer than three eligible heroes means fewer
-          than three recommendations.
+          Calculate to compare heroes across your collected games. Each needs
+          five measured games; missing references are excluded.
         </p>
       )}
       <details className="rating-method">
-        <summary>How the estimate works</summary>
+        <summary>Rank scale, data and validation</summary>
         <p>
-          Model {MODEL_VERSION}: survival 20%, kills + assists 25%, last hits
-          20%, final net worth per minute 25%, and result 10%. Private, bot,
-          placement and unknown match modes are excluded. Each stat is compared
-          with the same hero, mode and duration band in the provider's last 30
-          days of indexed ranked/unranked games. Marginal quantiles are
-          interpolated; the combined score is an index, not your percentile
-          among all players.
+          App estimate, not your official Valve rank or hidden MMR. The 0–100
+          performance index maps evenly onto Initiate through Eternus, with six
+          divisions each. Private, bot and unknown modes are excluded.
         </p>
         <p>
-          Ten neutral games worth of weight pull small samples toward 50. Low
-          combat involvement caps the survival contribution, so avoiding every
-          fight cannot earn maximum survival credit. All four history metrics
-          must be present. The cohort must contain at least 100 indexed hero
-          games; the API does not report separate sample counts for each
-          quantile.
+          Model {MODEL_VERSION}: survival 20%, combat 25%, farming 20%, economy
+          25%, result 10%. Compared with the same hero, mode and duration in the
+          last 30 days. Ten neutral games stabilise small samples; low combat
+          limits survival credit. Current references can differ from the patch
+          played.
         </p>
         <p>
-          Companion bands: Developing &lt;35, Building 35–49, Established 50–64,
-          Advanced 65–79, Exceptional 80+. These custom bands estimate recorded
-          performance, not hidden Valve MMR. Lobby strength, teammates, role
-          choices, patches and missing history affect the estimate. Higher
-          numbers are not instructions to chase kills or farm at the team's
-          expense.
+          {validation.count >= 10
+            ? `Sanity check: ${validation.count} measured ranked games with reported Valve badges; mean difference ${validation.tierError!.toFixed(1)} tiers. This is an in-sample check, not proof of predictive accuracy.`
+            : `Validation pending: ${validation.count} measured ranked games have an official badge (ten required). Unranked results cannot validate an official-rank prediction.`}
         </p>
-        {Object.values(evidence).some((r) => r.stale) && (
-          <p>Some comparisons use saved offline reference data.</p>
-        )}
+        <p>
+          Best heroes use all collected scored games with valid current hero
+          comparisons, at least five per hero. Older patches can differ. Overall
+          rank uses your last 60 scored games in 90 days.
+        </p>
         {Object.values(evidence).length > 0 && (
-          <p>
-            Oldest reference fetch:{" "}
+          <small>
+            Reference fetched{" "}
             {new Date(
               Math.min(...Object.values(evidence).map((r) => r.fetchedAt)),
             ).toLocaleString()}
-            .
-          </p>
+            {Object.values(evidence).some((r) => r.stale)
+              ? " · saved offline data"
+              : ""}
+            . Quantile sample counts are not reported separately.
+          </small>
         )}
-        {research.ratingHistory.length > 0 && (
+        {last && (
           <p>
-            Saved snapshots:{" "}
-            {research.ratingHistory
-              .filter((r) => r.mode === mode)
-              .slice(-6)
-              .map(
-                (r) =>
-                  `${new Date(r.at).toLocaleDateString()}: ${r.score.toFixed(1)}`,
-              )
-              .join(" · ")}
-            . Repeating the same match set does not add a new snapshot.
+            Last saved: {performanceRank(last.score).label} · {last.count} games
+            · {new Date(last.at).toLocaleDateString()}.
           </p>
         )}
       </details>

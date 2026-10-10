@@ -203,6 +203,11 @@ test("coverage archives reject another account and preserve imported older games
     accountId: 1234,
     matches: [{ ...history[0], match_id: 42, start_time: now - 365 * 86400 }],
   };
+  await page
+    .getByText("Recover known match IDs or move your archive", { exact: true })
+    .evaluate((el) => {
+      (el.parentElement as HTMLDetailsElement).open = true;
+    });
   await page.getByLabel("Import history archive file").setInputFiles({
     name: "archive.json",
     mimeType: "application/json",
@@ -222,6 +227,11 @@ test("coverage archives reject another account and preserve imported older games
       exact: true,
     }),
   ).toBeVisible();
+  await page
+    .getByText("Recover known match IDs or move your archive", { exact: true })
+    .evaluate((el) => {
+      (el.parentElement as HTMLDetailsElement).open = true;
+    });
   await page.getByLabel("Import history archive file").setInputFiles({
     name: "wrong.json",
     mimeType: "application/json",

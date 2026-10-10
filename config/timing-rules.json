@@ -28,7 +28,7 @@
       "confirmed": true,
       "source": "https://deadlock.wiki/Haunt?oldid=181836; checked 2026-10-08, latest listed patch 2026-10-06",
       "location": "Your tracked medium camp",
-      "note": "Fully clear your tracked camp, including any Sinner’s Sacrifice machines, before marking cleared."
+      "note": "Fully clear your tracked camp, including any Sinner\u2019s Sacrifice machines, before marking cleared."
     },
     {
       "id": "large-camp",
@@ -46,7 +46,7 @@
     },
     {
       "id": "boxes",
-      "name": "Boxes",
+      "name": "Boxes & golden statues",
       "category": "breakable",
       "mode": "conditional",
       "firstSpawn": 180,
@@ -54,23 +54,9 @@
       "respawnSeconds": 180,
       "enabled": true,
       "confirmed": true,
-      "source": "https://deadlock.wiki/Crate?oldid=181605; checked 2026-10-08, latest listed patch 2026-10-06",
+      "source": "https://deadlock.wiki/Crate?oldid=181605; checked 2026-10-08, latest listed patch 2026-10-06; https://deadlock.wiki/Buff_Container?oldid=181976",
       "location": "General surface location",
-      "note": "Surface defaults: 3:00 first / 3:00 delay. Tunnels: 5:00 / 5:00; above Midboss: 10:00 / 3:00. Uncollected drops can delay respawn."
-    },
-    {
-      "id": "statues",
-      "name": "Golden statues",
-      "category": "breakable",
-      "mode": "conditional",
-      "firstSpawn": 180,
-      "repeatSeconds": null,
-      "respawnSeconds": 180,
-      "enabled": true,
-      "confirmed": true,
-      "source": "https://deadlock.wiki/Buff_Container?oldid=181976; checked 2026-10-08, latest listed patch 2026-10-06",
-      "location": "General surface location",
-      "note": "Surface defaults: 3:00 first / 3:00 delay. Tunnels: 5:00 / 5:00; above Midboss: 10:00 / 3:00. Uncollected buffs can delay respawn."
+      "note": "One reminder for surface boxes and golden statues. First 3:00; earliest respawn 3:00 after clearing. Edit for tunnels or other locations."
     },
     {
       "id": "bridge",
@@ -112,11 +98,11 @@
       "confirmed": true,
       "source": "https://deadlock.wiki/Unstable_Rift?oldid=159557; checked 2026-10-08, latest listed patch 2026-10-06",
       "location": "Side-lane visual effect",
-      "note": "Visual effect can appear at 10:00–12:00. Mark appeared when you see it; the next window is 6–8 minutes later. Capture opens 80 seconds after that effect.",
+      "note": "Visual effect can appear at 10:00\u201312:00. Mark appeared when you see it; the next window is 6\u20138 minutes later. Capture opens 80 seconds after that effect.",
       "windowSeconds": 120
     }
   ],
-  "revision": 1,
+  "revision": 2,
   "checkedAt": "2026-10-08",
   "patch": "2026-10-06",
   "patchSource": "https://deadlock.wiki/Update:October_6,_2026"

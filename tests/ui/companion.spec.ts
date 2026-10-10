@@ -49,7 +49,7 @@ test("navigation, timer sync, audio, reminder delivery and persistence", async (
     page
       .getByRole("navigation", { name: "Main navigation" })
       .getByRole("button"),
-  ).toHaveCount(4);
+  ).toHaveCount(3);
   await page.route("https://api.deadlock-api.com/**", (route) =>
     route.fulfill({ json: [] }),
   );
@@ -104,7 +104,7 @@ test("current defaults are enabled and editable; Rift shows a window and a manua
 }) => {
   await page.goto("/");
   const switches = page.getByRole("switch", { name: /Enable / });
-  expect(await switches.count()).toBe(8);
+  expect(await switches.count()).toBe(7);
   for (const toggle of await switches.all())
     await expect(toggle).toHaveAttribute("aria-checked", "true");
   const small = page.locator(".rule-card").filter({

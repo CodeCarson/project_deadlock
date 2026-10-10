@@ -5,12 +5,14 @@ import {
   type Synergy,
   type Composition,
 } from "./api.js";
-import { rateHistory, type Evidence } from "./performance.js";
+import { heroRoles, type TeamRole } from "./hero-guide.js";
+import { rateHistory, recentRatedScope, type Evidence } from "./performance.js";
 export interface PlannerPlayer {
   accountId?: number;
   name: string;
   matches: Match[];
   lock?: number;
+  favorites?: number[];
 }
 export interface HeroFit {
   heroId: number;
@@ -32,7 +34,7 @@ export function playerHeroFits(
       [1, 4].includes(m.match_mode ?? 0) &&
       outcome(m) !== "unscored",
   );
-  const ratings = rateHistory(matches, evidence).heroes;
+  const ratings = rateHistory(recentRatedScope(matches, mode), evidence).heroes;
   return [...new Set(matches.map((m) => m.hero_id))]
     .map((heroId) => {
       const games = matches.filter((m) => m.hero_id === heroId),
@@ -41,7 +43,7 @@ export function playerHeroFits(
       const rated = ratings.find((r) => r.heroId === heroId);
       return {
         heroId,
-        score: rated?.score ?? ((wins + 5) / (count + 10)) * 100,
+        score: rated?.score ?? ((wins + 10) / (count + 20)) * 100,
         count,
         wins,
         measured: !!rated,
@@ -57,21 +59,48 @@ export function planTeam(
   compositions: Composition[],
   evidence: Evidence,
   mode: number,
+  options: {
+    preference?: "comfort" | "balanced" | "explore";
+    excluded?: number[];
+  } = {},
 ) {
   const size = mode === 1 ? 6 : 3;
   if (players.length !== size)
     throw new Error(`This mode needs ${size} team slots.`);
-  const active = new Set(heroes.map((h) => h.id));
+  const excluded = new Set(options.excluded ?? []);
+  const active = new Set(
+    heroes.filter((h) => !excluded.has(h.id)).map((h) => h.id),
+  );
   const locks = players.flatMap((p) => (p.lock ? [p.lock] : []));
   if (new Set(locks).size !== locks.length)
     throw new Error("Two players cannot lock the same hero.");
   if (locks.some((id) => !active.has(id)))
-    throw new Error("A locked hero is unavailable in the current catalog.");
+    throw new Error(
+      "A locked hero is excluded or unavailable. Remove its exclusion or unlock it.",
+    );
   const fits = players.map((p) => playerHeroFits(p, evidence, mode));
-  const personal = (i: number, id: number) =>
-    players[i].accountId
-      ? (fits[i].find((h) => h.heroId === id)?.score ?? 20)
+  const personal = (i: number, id: number) => {
+    const fit = fits[i].find((h) => h.heroId === id);
+    const base = players[i].accountId
+      ? (fit?.score ?? (options.preference === "explore" ? 35 : 20))
       : 40;
+    const comfort = players[i].favorites?.includes(id) ? 15 : 0;
+    const experience = fit ? Math.min(5, Math.log2(fit.count + 1)) : 0;
+    return Math.min(100, base + comfort + experience);
+  };
+  const heroMap = new Map(heroes.map((h) => [h.id, h]));
+  const roles = (ids: number[]) => {
+    const available = new Set(ids.flatMap((id) => heroRoles(heroMap.get(id))));
+    const required: TeamRole[] = ["frontline", "control", "damage"];
+    const unknown = ids.filter(
+      (id) => !heroRoles(heroMap.get(id)).length,
+    ).length;
+    return {
+      covered: [...available],
+      missing: required.filter((r) => !available.has(r)),
+      unknown,
+    };
+  };
   const pairs = new Map(
     synergies
       .filter(
@@ -114,9 +143,25 @@ export function planTeam(
     const fullScore = team
       ? ((team.wins + 50) / (team.wins + team.losses + 100)) * 100
       : 50;
+    const coverage = roles(ids);
+    const balance =
+      coverage.unknown === size
+        ? 50
+        : Math.max(0, 100 - coverage.missing.length * 25);
+    const personalWeight =
+      options.preference === "comfort"
+        ? 0.85
+        : options.preference === "explore"
+          ? 0.55
+          : 0.7;
     return {
       ids,
-      score: affinity * 0.75 + pair.score * 0.15 + fullScore * 0.1,
+      score:
+        affinity * personalWeight +
+        pair.score * (0.85 - personalWeight) +
+        fullScore * 0.1 +
+        balance * 0.05,
+      roles: coverage,
       affinity,
       pair,
       template: team,
@@ -146,24 +191,30 @@ export function planTeam(
     const best = states.get((1 << size) - 1);
     if (best) results.push(evaluate(best.ids));
   }
+  const popularity = new Map<number, number>();
+  for (const pair of synergies)
+    for (const id of [pair.hero_id1, pair.hero_id2])
+      popularity.set(id, (popularity.get(id) ?? 0) + pair.matches_played);
   const popular = [...heroes]
-    .sort((a, b) => {
-      const sum = (id: number) =>
-        synergies
-          .filter((s) => s.hero_id1 === id || s.hero_id2 === id)
-          .reduce((n, s) => n + s.matches_played, 0);
-      return sum(b.id) - sum(a.id);
-    })
+    .filter((h) => active.has(h.id))
+    .sort((a, b) => (popularity.get(b.id) ?? 0) - (popularity.get(a.id) ?? 0))
     .slice(0, 8)
     .map((h) => h.id);
+  const primary = players.findIndex((p) => p.accountId && !p.lock);
   let beam: { ids: number[]; score: number }[] = [{ ids: [], score: 0 }];
   for (let i = 0; i < size; i++) {
     const pool = players[i].lock
       ? [players[i].lock!]
-      : [...new Set([...fits[i].slice(0, 6).map((h) => h.heroId), ...popular])]
+      : [
+          ...new Set([
+            ...(players[i].favorites ?? []),
+            ...fits[i].slice(0, 8).map((h) => h.heroId),
+            ...popular,
+          ]),
+        ]
           .filter((id) => active.has(id))
-          .slice(0, 12);
-    beam = beam
+          .slice(0, 18);
+    const expanded = beam
       .flatMap((s) =>
         pool
           .filter((id) => !s.ids.includes(id))
@@ -178,15 +229,43 @@ export function planTeam(
             };
           }),
       )
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 200);
+      .sort((a, b) => b.score - a.score);
+    // Reserve search capacity for each primary-player pick. A single high-fit
+    // hero must not remove every alternative before the team is complete.
+    if (primary >= 0 && i >= primary) {
+      const groups = new Map<number, typeof beam>();
+      for (const state of expanded) {
+        const key = state.ids[primary];
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(state);
+      }
+      const width = Math.max(1, Math.floor(200 / Math.max(1, groups.size)));
+      beam = [...groups.values()].flatMap((states) => states.slice(0, width));
+    } else beam = expanded.slice(0, 200);
   }
   for (const state of beam)
     if (state.ids.length === size) results.push(evaluate(state.ids));
   const unique = new Map<string, ReturnType<typeof evaluate>>();
   for (const r of results.sort((a, b) => b.score - a.score)) {
-    const key = [...r.ids].sort((a, b) => a - b).join("-");
+    const key =
+      [...r.ids].sort((a, b) => a - b).join("-") +
+      (primary >= 0 ? `:${r.ids[primary]}` : "");
     if (!unique.has(key)) unique.set(key, r);
   }
-  return [...unique.values()].slice(0, 3);
+  const ranked = [...unique.values()];
+  const selected: typeof ranked = [];
+  while (selected.length < 3) {
+    const candidates = ranked.filter((r) => !selected.includes(r));
+    if (!candidates.length) break;
+    const alternative =
+      primary >= 0 && selected.length
+        ? candidates.find(
+            (r) =>
+              selected.every((s) => s.ids[primary] !== r.ids[primary]) &&
+              r.score >= ranked[0].score - 12,
+          )
+        : undefined;
+    selected.push(alternative ?? candidates[0]);
+  }
+  return selected;
 }

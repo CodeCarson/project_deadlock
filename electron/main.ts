@@ -9,6 +9,7 @@ import {
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { ClockReader } from "../src/core/clock-reader.js";
 import { ClockCapture } from "./clock-capture.js";
+import { AlertVoice } from "./alert-voice.js";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { ApiClient } from "../src/core/api.js";
@@ -115,6 +116,22 @@ else {
         trusted(event);
         return api.importHistory(accountId, archive);
       });
+      ipcMain.handle("api:recoverHistory", (event, accountId, ids) => {
+        trusted(event);
+        return api.recoverHistory(accountId, ids);
+      });
+      const voice = new AlertVoice(
+        app.isPackaged ? process.resourcesPath : join(here, "../.."),
+      );
+      ipcMain.handle("audio:voices", (event) => {
+        trusted(event);
+        return voice.voices();
+      });
+      ipcMain.handle("audio:speak", (event, text, voiceId, speed, volume) => {
+        trusted(event);
+        return voice.speak({ text, voice: voiceId, speed, volume });
+      });
+      app.on("before-quit", () => voice.close());
       engine = new TimerEngine(settings);
       detection = new ClockReader(engine);
       const capture = new ClockCapture(
@@ -334,6 +351,23 @@ else {
         else void window.loadFile(join(here, "../../dist/index.html"));
       };
       createWindow();
+      // Collect new indexed games even while the renderer is on another page.
+      // Ten-minute polling stays below the provider's bot-friend hourly allowance.
+      const refreshHistory = () => {
+        if (
+          settings.autoRefreshStats &&
+          settings.accountId &&
+          engine.snapshot().status !== "running"
+        )
+          void api
+            .request({
+              resource: "history",
+              accountId: Number(settings.accountId),
+              refresh: true,
+            })
+            .catch(() => {});
+      };
+      setInterval(refreshHistory, 600000);
       setInterval(() => {
         detection.check();
         sendAlerts(engine.tick());

@@ -76,7 +76,7 @@ export const settingsSchema = z
                 mode: z.union([z.literal(1), z.literal(4)]),
                 at: z.number().finite().nonnegative(),
                 anchor: z.number().int().positive().safe(),
-                model: z.literal(1),
+                model: z.union([z.literal(1), z.literal(2)]),
               }),
             )
             .max(50)
@@ -124,12 +124,26 @@ export const settingsSchema = z
           .array(z.number().int().nonnegative().safe())
           .length(6)
           .default([0, 0, 0, 0, 0, 0]),
+        preference: z
+          .enum(["comfort", "balanced", "explore"])
+          .default("balanced"),
+        excluded: z
+          .array(z.number().int().positive().safe())
+          .max(100)
+          .default([]),
+        favorites: z
+          .array(z.array(z.number().int().positive().safe()).max(12))
+          .length(6)
+          .default([[], [], [], [], [], []]),
       })
       .default({
         mode: 1,
         cohort: "ranked",
         accountIds: ["", "", "", "", "", ""],
         locks: [0, 0, 0, 0, 0, 0],
+        preference: "balanced",
+        excluded: [],
+        favorites: [[], [], [], [], [], []],
       }),
     playerFilters: z
       .object({
@@ -139,8 +153,21 @@ export const settingsSchema = z
       })
       .default({ hero: "all", mode: "all", days: "all" }),
     volume: z.number().min(0).max(1),
-    sound: z.enum(["chime", "pulse", "bell"]),
+    sound: z.enum([
+      "chime",
+      "pulse",
+      "bell",
+      "knock",
+      "radio",
+      "glass",
+      "whistle",
+    ]),
     speech: z.boolean(),
+    voiceId: z.string().max(300).default(""),
+    voiceStyle: z.enum(["operator", "lookout"]).default("operator"),
+    alertSpeed: z.number().finite().min(0.75).max(2).default(1.35),
+    autoRefreshStats: z.boolean().default(true),
+    combinedBreakables: z.boolean().default(false),
     automaticTracking: z.boolean().default(false),
     clockSyncSeconds: z.number().int().min(5).max(60).default(15),
     clockGraceSeconds: z.number().int().min(5).max(300).default(90),
@@ -160,6 +187,7 @@ export const defaultSettings: Settings = settingsSchema.parse({
   volume: 0.65,
   sound: "chime",
   speech: false,
+  combinedBreakables: true,
   compact: false,
   warnings: [15],
   rules: defaults.rules,
@@ -230,6 +258,17 @@ export interface Bridge {
   resumeAutomaticTracking(): Promise<void>;
   request(request: ApiRequest): Promise<ApiResult>;
   importHistory(accountId: number, archive: unknown): Promise<ApiResult>;
+  recoverHistory(
+    accountId: number,
+    matchIds: number[],
+  ): Promise<{ recovered: number; errors: string[] }>;
+  alertVoices(): Promise<{ id: string; name: string }[]>;
+  speakAlert(
+    text: string,
+    voiceId: string,
+    speed: number,
+    volume: number,
+  ): Promise<void>;
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
   getTimer(): Promise<TimerSnapshot>;

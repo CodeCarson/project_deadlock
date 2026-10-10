@@ -13,6 +13,11 @@ const bridge: Bridge = {
   importHistory: (accountId, archive) =>
     ipcRenderer.invoke("api:importHistory", accountId, archive),
   request: (request) => ipcRenderer.invoke("api:request", request),
+  recoverHistory: (accountId, ids) =>
+    ipcRenderer.invoke("api:recoverHistory", accountId, ids),
+  alertVoices: () => ipcRenderer.invoke("audio:voices"),
+  speakAlert: (text, voiceId, speed, volume) =>
+    ipcRenderer.invoke("audio:speak", text, voiceId, speed, volume),
   loadSettings: () => ipcRenderer.invoke("settings:load"),
   saveSettings: (settings: Settings) =>
     ipcRenderer.invoke("settings:save", settings),

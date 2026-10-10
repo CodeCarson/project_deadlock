@@ -241,6 +241,7 @@ export interface ApiResult {
   cached: boolean;
   stale: boolean;
   warning?: string;
+  forceFetchedAt?: number;
   historySource?: "steam" | "stored" | "unknown";
   providerCount?: number;
   retainedCount?: number;
@@ -578,6 +579,68 @@ export class ApiClient {
         `${message} Try Refresh when your connection is available.`,
       );
     }
+  }
+  async recoverHistory(accountId: number, rawIds: unknown) {
+    apiPath({ resource: "history", accountId });
+    const ids = [
+      ...new Set(z.array(id.positive()).min(1).max(30).parse(rawIds)),
+    ];
+    const matches: Match[] = [],
+      errors: string[] = [];
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(3, ids.length) }, async () => {
+        while (next < ids.length) {
+          const matchId = ids[next++];
+          try {
+            const result = await this.request({
+              resource: "metadata",
+              matchId,
+            });
+            const info = metadataSchema.parse(result.data).match_info;
+            const player = info.players.find((p) => p.account_id === accountId);
+            if (!player) throw new Error("Your account is not in this match.");
+            matches.push(
+              matchSchema.parse({
+                account_id: accountId,
+                match_id: info.match_id,
+                hero_id: player.hero_id,
+                start_time: info.start_time,
+                game_mode: info.game_mode,
+                match_mode: info.match_mode,
+                match_duration_s: info.duration_s,
+                player_kills: player.kills,
+                player_deaths: player.deaths,
+                player_assists: player.assists,
+                last_hits: player.last_hits,
+                denies: player.denies,
+                net_worth: player.net_worth,
+                player_match_outcome:
+                  player.player_match_outcome ??
+                  ((info.winning_team === 0 || info.winning_team === 1) &&
+                  (player.team === 0 || player.team === 1)
+                    ? player.team === info.winning_team
+                      ? 1
+                      : 2
+                    : null),
+              }),
+            );
+          } catch (e) {
+            errors.push(
+              `#${matchId}: ${e instanceof Error ? e.message : "Unavailable"}`,
+            );
+          }
+        }
+      }),
+    );
+    if (matches.length)
+      await this.importHistory(accountId, {
+        format: "deadlock-companion-history",
+        version: 1,
+        accountId,
+        matches,
+      });
+    return { recovered: matches.length, errors };
   }
   importHistory(accountId: number, raw: unknown): Promise<ApiResult> {
     apiPath({ resource: "history", accountId });
