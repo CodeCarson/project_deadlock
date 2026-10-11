@@ -6,7 +6,7 @@ import {
   type Composition,
 } from "./api.js";
 import { heroRoles, type TeamRole } from "./hero-guide.js";
-import { rateHistory, recentRatedScope, type Evidence } from "./performance.js";
+import { rateHistory, recentRatedScope, type Evidence } from "./hero-fit.js";
 export interface PlannerPlayer {
   accountId?: number;
   name: string;

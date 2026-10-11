@@ -56,6 +56,11 @@ test("production offline voice files decode and finish, including an alert while
         return original.call(this);
       };
     });
+    await page.getByRole("button", { name: "Stats", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Coming soon", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Live Match", exact: true }).click();
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByLabel("Alert speed", { exact: true }).selectOption("1.5");
     for (const [index, voice] of catalog.voices

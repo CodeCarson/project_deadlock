@@ -40,23 +40,12 @@ test("production app, native persistence, minimized scheduling and audio generat
       ),
     ).toBe("undefined");
     if (process.env.COMPANION_TEST_LIVE_API === "1") {
-      for (const resource of [
-        "history",
-        "profile",
-        "heroes",
-        "ranks",
-        "items",
-      ] as const) {
+      for (const resource of ["history", "profile", "heroes"] as const) {
         const result = await page.evaluate(
           ({ resource }) =>
             window.companion!.request({
               resource,
-              accountId:
-                resource === "heroes" ||
-                resource === "ranks" ||
-                resource === "items"
-                  ? undefined
-                  : 1896902807,
+              accountId: resource === "heroes" ? undefined : 1896902807,
             }),
           { resource },
         );
@@ -70,15 +59,6 @@ test("production app, native persistence, minimized scheduling and audio generat
         window.companion!.request({ resource: "search", query: "Carson" }),
       );
       expect((result.data as any[]).length).toBeGreaterThan(0);
-      const metadata = await page.evaluate(() =>
-        window.companion!.request({ resource: "metadata", matchId: 112140499 }),
-      );
-      expect((metadata.data as any).match_info.match_id).toBe(112140499);
-      expect(
-        (metadata.data as any).match_info.players.some(
-          (p: any) => p.account_id === 60392473,
-        ),
-      ).toBe(true);
       const refs = await page.evaluate(async () => {
         const options = { analysisMode: 1 as const, durationBand: 2 };
         return Promise.all([
@@ -154,10 +134,12 @@ test("production app, native persistence, minimized scheduling and audio generat
       BrowserWindow.getAllWindows()[0].restore(),
     );
     await page.getByRole("button", { name: "Pause", exact: true }).click();
-    // Published-contract fixtures exercise main-process transport, validated IPC and disk cache.
+    // Stats is a local placeholder; native API remains available only for planner work.
     await app.evaluate(() => {
+      (globalThis as any).apiCalls = [];
       globalThis.fetch = async (input) => {
         const url = String(input);
+        (globalThis as any).apiCalls.push(url);
         const data = url.includes("match-history")
           ? [
               {
@@ -165,6 +147,8 @@ test("production app, native persistence, minimized scheduling and audio generat
                 hero_id: 1,
                 account_id: 1234,
                 start_time: 100,
+                game_mode: 1,
+                match_mode: 1,
                 player_match_outcome: 1,
                 player_kills: 5,
                 player_deaths: 1,
@@ -173,104 +157,61 @@ test("production app, native persistence, minimized scheduling and audio generat
             ]
           : url.includes("/players/steam?")
             ? [{ account_id: 1234, personaname: "Native API test" }]
-            : url.includes("/card")
-              ? { account_id: 1234 }
-              : url.includes("/heroes")
-                ? [{ id: 1, name: "Abrams" }]
-                : [];
+            : url.includes("/heroes")
+              ? ["Abrams", "Seven", "Vindicta", "Dynamo", "Kelvin", "Ivy"].map(
+                  (name, i) => ({ id: i + 1, name }),
+                )
+              : [];
         return Response.json(data);
       };
     });
     await page.getByRole("button", { name: "Stats", exact: true }).click();
-    await page.getByLabel("Find your player profile").fill("1234");
+    await expect(
+      page.getByRole("heading", { name: "Coming soon", exact: true }),
+    ).toBeVisible();
+    expect(await app.evaluate(() => (globalThis as any).apiCalls)).toEqual([]);
+    expect(
+      await page.evaluate(
+        () =>
+          "importHistory" in window.companion! ||
+          "recoverHistory" in window.companion!,
+      ),
+    ).toBe(false);
     await page
+      .getByRole("button", { name: "Team Planner", exact: true })
+      .click();
+    await page.getByLabel("Position 1 Steam name or ID").fill("1234");
+    await page
+      .locator(".planner-slot")
+      .first()
       .getByRole("button", { name: "Load player", exact: true })
       .click();
-    await expect(
-      page.getByRole("heading", { name: "Native API test", exact: true }),
-    ).toBeVisible();
-    await expect(page.getByText("API RESPONSE", { exact: true })).toBeVisible();
-    await app.evaluate(({ shell }) => {
-      const state = globalThis as typeof globalThis & {
-        externalLinks: string[];
-      };
-      state.externalLinks = [];
-      shell.openExternal = async (url: string) => {
-        state.externalLinks.push(url);
-      };
-    });
-    await page
-      .locator(".history-coverage summary")
-      .first()
-      .evaluate((el) => {
-        (el.parentElement as HTMLDetailsElement).open = true;
-      });
-    await page
-      .getByRole("link", { name: "Set up Steam history access", exact: true })
-      .click();
-    await page
-      .getByRole("link", {
-        name: "Provider documentation",
-        exact: true,
-      })
-      .click();
-    const openedLinks = await app.evaluate(
-      () =>
-        (globalThis as typeof globalThis & { externalLinks: string[] })
-          .externalLinks,
+    await expect(page.locator(".planner-slot").first()).toContainText(
+      "Native API test",
     );
-    expect(openedLinks).toEqual([
-      "https://deadlock-api.com/",
-      "https://api.deadlock-api.com/docs",
-    ]);
-    await page.locator(".history-coverage summary").first().click();
+    await page.getByLabel("Selection style").selectOption("comfort");
     await page
-      .getByLabel("Match review note")
-      .fill("Native journal persistence check");
-    await page
-      .getByRole("button", { name: "Save review note", exact: true })
+      .getByRole("button", { name: "Recommend team composition", exact: true })
       .click();
-    await expect(page.getByRole("status")).toHaveText("Settings saved");
-    await page.evaluate(() =>
-      window.companion!.importHistory(1234, {
-        format: "deadlock-companion-history",
-        version: 1,
-        accountId: 1234,
-        matches: [
-          {
-            match_id: 122,
-            account_id: 1234,
-            hero_id: 1,
-            start_time: 99,
-            player_match_outcome: 1,
-          },
-        ],
-      }),
-    );
-    await page.getByRole("button", { name: "Stats", exact: true }).click();
-    await page
-      .locator(".stats-disclosure > summary")
-      .filter({ hasText: "Explore hero statistics" })
-      .click();
-    await page.getByLabel("Filter by hero").selectOption("1");
-    await expect(
-      page.getByRole("heading", { name: "Hero analytics", exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Stats", exact: true }).click();
-    await page
-      .locator(".stats-disclosure > summary")
-      .filter({ hasText: "Explore all matches" })
-      .click();
-    await expect(page.locator(".history-match")).toHaveCount(1);
-    const rejected = await page.evaluate(async () => {
-      try {
-        await window.companion!.request({ resource: "filesystem" } as never);
-        return false;
-      } catch {
-        return true;
-      }
-    });
-    expect(rejected).toBe(true);
+    await expect(page.locator(".recommended-comp").first()).toBeVisible();
+    for (const resource of [
+      "filesystem",
+      "metadata",
+      "card",
+      "items",
+      "ranks",
+    ]) {
+      expect(
+        await page.evaluate(async (resource) => {
+          try {
+            await window.companion!.request({ resource } as never);
+            return false;
+          } catch {
+            return true;
+          }
+        }, resource),
+      ).toBe(true);
+    }
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByLabel("Notification sound").selectOption("bell");
     await expect(page.getByRole("status")).toHaveText("Settings saved");
@@ -278,13 +219,16 @@ test("production app, native persistence, minimized scheduling and audio generat
       ({ app }) => app.getPath("userData") + "/settings.json",
     );
     expect(settingsFile.startsWith(dir)).toBe(true);
-    expect(JSON.parse(await readFile(settingsFile, "utf8")).sound).toBe("bell");
-    expect(JSON.parse(await readFile(settingsFile, "utf8")).accountId).toBe(
-      "1234",
-    );
-    expect(
-      JSON.parse(await readFile(settingsFile, "utf8")).playerFilters.hero,
-    ).toBe("1");
+    const stored = JSON.parse(await readFile(settingsFile, "utf8"));
+    expect(stored).toMatchObject({
+      sound: "bell",
+      accountId: "1234",
+      planner: {
+        preference: "comfort",
+        accountIds: ["1234", "", "", "", "", ""],
+      },
+    });
+    expect(stored).not.toHaveProperty("autoRefreshStats");
     const cached = JSON.parse(
       await readFile(
         join(settingsFile, "../api-cache/history-1234.json"),
@@ -298,22 +242,22 @@ test("production app, native persistence, minimized scheduling and audio generat
     await expect(reopened.getByRole("timer")).toHaveText("00:00");
     await reopened.getByRole("button", { name: "Stats", exact: true }).click();
     await expect(
-      reopened.getByRole("heading", { name: "Native API test", exact: true }),
+      reopened.getByRole("heading", { name: "Coming soon", exact: true }),
     ).toBeVisible();
-    await expect(
-      reopened.getByText("CACHED DATA", { exact: true }),
-    ).toBeVisible();
-    await expect(reopened.getByLabel("Match review note")).toHaveValue(
-      "Native journal persistence check",
-    );
     expect(
       (
         await reopened.evaluate(() =>
           window.companion!.request({ resource: "history", accountId: 1234 }),
         )
       ).data,
-    ).toHaveLength(2);
-    await expect(reopened.getByLabel("Filter by hero")).toHaveValue("1");
+    ).toHaveLength(1);
+    await reopened
+      .getByRole("button", { name: "Team Planner", exact: true })
+      .click();
+    await expect(
+      reopened.getByLabel("Position 1 Steam name or ID"),
+    ).toHaveValue("1234");
+    await expect(reopened.getByLabel("Selection style")).toHaveValue("comfort");
     await reopened
       .getByRole("button", { name: "Settings", exact: true })
       .click();

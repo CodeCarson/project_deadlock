@@ -1,8 +1,8 @@
 {
   "name": "deadlock-companion",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "private": true,
-  "description": "A Windows Deadlock companion with public player statistics and configurable match reminders",
+  "description": "A Windows Deadlock companion with match reminders and a team composition planner",
   "author": "Deadlock Companion contributors",
   "license": "MIT",
   "type": "module",
@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on http://127.0.0.1:5173 dist-electron/electron/main.js dist-electron/electron/preload.cjs && electron . --dev\"",
     "dev:web": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && tsc -p tsconfig.electron.json && vite build",
+    "build": "node scripts/clean-build.mjs && tsc --noEmit && tsc -p tsconfig.electron.json && vite build",
     "start": "electron .",
     "test": "vitest run",
     "test:ui": "playwright test",
@@ -63,7 +63,6 @@
     "lucide-react": "^1.53.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "recharts": "^3.10.1",
     "tesseract.js": "^7.0.0",
     "zod": "^4.6.5"
   },

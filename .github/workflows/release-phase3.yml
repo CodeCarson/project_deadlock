@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing Phase 3 source tag
         required: true
-        default: v0.7.3-phase3
+        default: v0.7.4-phase3
         type: string
 
 permissions:
@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ inputs.tag || 'v0.7.3-phase3' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.7.4-phase3' }}
     steps:
       - name: Check out the tagged application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ inputs.tag || 'v0.7.3-phase3' }}
+          ref: ${{ inputs.tag || 'v0.7.4-phase3' }}
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -103,7 +103,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-phase3$') {
-            throw 'Expected a Phase 3 version tag such as v0.7.3-phase3.'
+            throw 'Expected a Phase 3 version tag such as v0.7.4-phase3.'
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $originalZip = "Deadlock Companion-$version-win.zip"
@@ -114,21 +114,19 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
           "$hash  $zipName" | Set-Content -Encoding utf8NoBOM release/SHA256SUMS.txt
           @'
-          Windows x64 voice and history update (0.7.3). Close the app, extract the entire ZIP and launch Deadlock Companion.exe. Existing profile, clock crop, stats archive, notes and reminders carry over.
+          Windows x64 timer and Team Planner update (0.7.4). Close the old app, extract the entire ZIP into a new folder and launch Deadlock Companion.exe. Timer rules, Silas/June voice choices, clock crop and planner settings carry over.
 
-          Settings now offers only Silas and June. The other voice packs and system-voice picker are removed. Removed female packs migrate to June; other removed selections migrate to Silas. Both packs contain 106 prerecorded clips in total, with adjustable speed and pitch preservation. Custom or renamed reminders still use system speech. No neural speech model runs during games.
+          Stats now displays only Coming soon. The previous dashboard, coaching, personal-rank calculator, graphs, journal/goals, archive controls, Stats settings and background Stats polling are removed. Dedicated source modules, compiled leftovers, charting dependencies and rank artwork are excluded from the package.
 
-          Enter a Steam name in Stats and select your profile. History checks Deadlock API and an experimental Statlocker adapter, merging available Normal and Street Brawl records by match ID into one durable archive. Each source shows its own count and access status. Provider aggregate totals do not stand in for actual games. Confirmed primary Steam-bot access automatically triggers an older-history rebuild at most hourly. Team Planner uses the same combined collection. Existing recovery/import/export tools and sparse clock tracking remain.
+          Live Match retains editable objective reminders, combined boxes/statues alerts, personal reminders, Silas and June, adjustable alert speed, local clock capture, sparse clock synchronization and Resume live tracking. Team Planner retains Steam-name lookup, comfort pools, hero locks/exclusions, saved choices and alternative recommendations. Shared player-history and hero-fit data is retained for planner calculations only. The experimental secondary history source is still subject to provider access and incomplete coverage.
 
-          Live Statlocker access and recovery of every career match are not confirmed: this cloud environment denied requests to both provider hosts. The adapter is tested against fixtures derived from a public client. A denied or changed endpoint is shown as unavailable and keeps saved games intact. Research notes and pinned sources are in docs/statlocker-history-research.md in the source repository. Optional provider ingest setup is linked inside Your match archive; Companion does not install it or share local replay data automatically.
-
-          Validated with unit, browser and production Electron checks. Windows CI verifies native capture/speech and both voices from the packaged application before publication. Deadlock artwork belongs to Valve; performance ranks are app estimates, not official Valve MMR.
+          Validated with unit/browser tests and three production Electron checks. Windows CI verifies native capture/speech, the Coming soon page and both bundled voices in the packaged Windows application before publication. No neural voice model runs during games. Deadlock artwork belongs to Valve; the app is an unofficial companion.
           '@ | Set-Content -Encoding utf8NoBOM release/notes.md
           $existing = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isPrerelease 2>$null
           if ($LASTEXITCODE -eq 0) {
             if (!(($existing | ConvertFrom-Json).isPrerelease)) { throw 'The existing release is not a prerelease.' }
             gh release upload $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
           } else {
-            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Silas, June & Combined History' --notes-file release/notes.md
+            gh release create $env:RELEASE_TAG $zipPath release/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --prerelease --verify-tag --title 'Deadlock Companion — Timer & Team Planner' --notes-file release/notes.md
           }
           if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed.' }

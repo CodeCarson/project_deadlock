@@ -33,7 +33,3 @@ export const eventArtwork: Record<string, string> = {
   bridge: "buff.png",
   rift: "spirit.svg",
 };
-
-export function heroArtwork(name: string) {
-  return `hero-${name.toLowerCase().replaceAll(" & ", " and ").replaceAll(" ", "-")}.png`;
-}

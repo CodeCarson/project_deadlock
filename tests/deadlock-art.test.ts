@@ -23,8 +23,6 @@ it("ships the credited, unchanged game artwork instead of LFS pointer files", ()
     if (name.endsWith(".svg"))
       expect(bytes.toString()).not.toMatch(/<script|onload=|<foreignObject/i);
   }
-  for (let tier = 0; tier <= 11; tier++)
-    expect(sources[`rank-${tier}.webp`]).toBeDefined();
   expect(readFileSync(join(folder, "NOTICE.txt"), "utf8")).toContain(
     "Valve Corporation",
   );

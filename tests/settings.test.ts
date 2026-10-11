@@ -140,7 +140,7 @@ it("combines matching old breakable reminders and preserves intentionally differ
   expect(migrateSettings(base).rules).toHaveLength(3);
 });
 
-it("merges an enabled verified breakable with an unconfirmed disabled twin without rejecting saved research", () => {
+it("merges an enabled verified breakable with an unconfirmed disabled twin while migrating legacy settings", () => {
   const base = structuredClone(defaultSettings);
   base.combinedBreakables = false;
   const box = {
@@ -159,14 +159,6 @@ it("merges an enabled verified breakable with an unconfirmed disabled twin witho
     source: "Verified statue schedule",
   };
   base.rules = [box, statue, reminder];
-  base.playerResearch = {
-    "1234": {
-      expectedTotal: 506,
-      goal: null,
-      notes: [{ matchId: 123, text: "Keep this journal" }],
-      ratingHistory: [],
-    },
-  };
   const migrated = migrateSettings(base);
   expect(migrated.rules[0]).toMatchObject({
     enabled: true,
@@ -174,7 +166,6 @@ it("merges an enabled verified breakable with an unconfirmed disabled twin witho
     source: "Verified statue schedule",
     name: "Boxes & golden statues",
   });
-  expect(migrated.playerResearch).toEqual(base.playerResearch);
   expect(migrated.rules.at(-1)).toEqual(reminder);
   expect(migrateSettings(migrated)).toEqual(migrated);
 });
@@ -197,4 +188,27 @@ it("migrates removed voices without losing the account, speed or clock settings"
   expect(migrateSettings({ ...base, voiceId: "pack:bf_emma" }).voiceId).toBe(
     "pack:june",
   );
+});
+
+it("retires old Stats preferences while retaining timer, clock and planner settings", () => {
+  const current = {
+    ...defaultSettings,
+    accountId: "60392473",
+    automaticTracking: true,
+    captureRegion: { x: 200, y: 50, width: 120, height: 40 },
+    planner: {
+      ...defaultSettings.planner,
+      preference: "comfort",
+      accountIds: ["60392473", "", "", "", "", ""],
+    },
+  };
+  const migrated = migrateSettings({
+    ...current,
+    autoRefreshStats: true,
+    playerFilters: { hero: "1", mode: "all", days: "all" },
+    playerResearch: { "60392473": { notes: [] } },
+  });
+  expect(migrated).toMatchObject(current);
+  for (const field of ["autoRefreshStats", "playerFilters", "playerResearch"])
+    expect(migrated).not.toHaveProperty(field);
 });

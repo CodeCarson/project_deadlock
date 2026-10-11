@@ -6,11 +6,8 @@ import {
   referenceKey,
   rateHistory,
   recentRatedScope,
-  gameCoaching,
   durationBand,
-  performanceRank,
-  ratingValidation,
-} from "../src/core/performance";
+} from "../src/core/hero-fit";
 const q = quantilesSchema.parse({
   avg: 50,
   std: 20,
@@ -52,7 +49,7 @@ const ref = {
   fetchedAt: 1000,
   stale: false,
 };
-describe("hero-aware performance and personal coaching", () => {
+describe("team planner hero performance", () => {
   it("interpolates published quantiles and resolves tied values without zero division", () => {
     expect(percentile(37.5, q)).toBe(37.5);
     expect(percentile(-1, q)).toBe(0);
@@ -120,75 +117,4 @@ describe("hero-aware performance and personal coaching", () => {
     ).toEqual([]);
     expect(games).toHaveLength(73);
   });
-  it("identifies a same-hero weakness and actionable next-game focus without using later matches", () => {
-    const prior = Array.from({ length: 6 }, (_, i) =>
-      match({ match_id: i + 2, start_time: 900 - i, player_deaths: 2 }),
-    );
-    prior.push(
-      match({ match_id: 20, start_time: 1100, player_deaths: 500 }),
-      match({ match_id: 21, start_time: 800, hero_id: 2, player_deaths: 500 }),
-    );
-    const coaching = gameCoaching(match({ player_deaths: 10 }), prior, {
-      id: 1,
-      name: "Dynamo",
-      hero_type: "mystic",
-    });
-    expect(coaching.weakest?.key).toBe("deaths");
-    expect(coaching.weakest?.expected).toBe(2);
-    expect(coaching.prior).toBe(6);
-    expect(coaching.action).toContain("ultimate");
-    expect(coaching.action.split(/\s+/).length).toBeLessThanOrEqual(25);
-    expect(coaching.identity).toBe("mystic");
-  });
-  it("does not invent a failure for excellent games or one-measurement personal baselines", () => {
-    const m = match({
-      player_kills: 99,
-      player_assists: 0,
-      player_deaths: 0,
-      last_hits: 99,
-      net_worth: 2970,
-    });
-    const c = gameCoaching(m, [], { id: 1, name: "Mina" }, ref);
-    expect(c.title).toBe("Next opportunity");
-    expect(c.weakest).toBeDefined();
-    const sparse = Array.from({ length: 6 }, (_, i) =>
-      match({
-        match_id: 10 + i,
-        start_time: 800 - i,
-        player_deaths: i ? null : 2,
-        player_kills: null,
-        player_assists: null,
-        last_hits: null,
-        net_worth: null,
-      }),
-    );
-    expect(gameCoaching(match(), sparse, undefined).weakest).toBeUndefined();
-  });
-});
-
-it("maps the full app scale to current Deadlock ranks and divisions", () => {
-  expect(performanceRank(0).label).toBe("Initiate I");
-  expect(performanceRank(100).label).toBe("Eternus VI");
-  expect(performanceRank(50).label).toBe("Ritualist IV");
-  expect(performanceRank(50).next).toBe("Ritualist V");
-  expect(performanceRank(100).next).toBeNull();
-  for (let score = 0; score <= 100; score++) {
-    const r = performanceRank(score);
-    expect(r.tier).toBeGreaterThanOrEqual(1);
-    expect(r.tier).toBeLessThanOrEqual(11);
-    expect(r.division).toBeGreaterThanOrEqual(1);
-    expect(r.division).toBeLessThanOrEqual(6);
-  }
-});
-it("validates only measured ranked games with real, valid badge divisions", () => {
-  const games = [
-    match({ match_mode: 4, ranked_display_badge: 64 }),
-    match({ match_id: 2, ranked_display_badge: 116 }),
-    match({ match_id: 3, match_mode: 4, ranked_display_badge: 70 }),
-  ];
-  const check = ratingValidation(
-    rateHistory(games, { [referenceKey(games[0])]: ref }).rated,
-  );
-  expect(check.count).toBe(1);
-  expect(check.tierError).not.toBeNull();
 });

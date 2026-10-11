@@ -1,6 +1,6 @@
 import { bridge } from "../core/bridge";
 import { heroBenchmarkSchema, metricsSchema, type Match } from "../core/api";
-import { durationBand, referenceKey, type Evidence } from "../core/performance";
+import { durationBand, referenceKey, type Evidence } from "../core/hero-fit";
 import { z } from "zod";
 export async function loadEvidence(
   matches: Match[],
@@ -62,4 +62,16 @@ export async function loadEvidence(
     }),
   );
   return { evidence, errors: [...new Set(errors)] };
+}
+
+export function winInterval(wins: number, losses: number) {
+  const n = wins + losses;
+  if (!n) return null;
+  const p = wins / n,
+    z = 1.96,
+    den = 1 + (z * z) / n,
+    mid = (p + (z * z) / (2 * n)) / den;
+  const radius =
+    (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / den;
+  return { low: (mid - radius) * 100, high: (mid + radius) * 100 };
 }

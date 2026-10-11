@@ -4,8 +4,6 @@ import {
   apiPath,
   parseAccount,
   matchSchema,
-  summarise,
-  heroSummaries,
   safeImage,
   type CacheEntry,
 } from "../src/core/api";
@@ -77,38 +75,6 @@ describe("public player identity and statistics", () => {
     );
     expect(() => apiPath({ resource: "history", accountId: -2 })).toThrow();
     expect(() => apiPath({ resource: "arbitrary" } as never)).toThrow();
-  });
-  it("excludes unscored games from win rate and handles unavailable metrics honestly", () => {
-    const matches = [
-      fixture(),
-      fixture({ match_id: 124, player_match_outcome: 2 }),
-      fixture({
-        match_id: 125,
-        hero_id: 2,
-        player_match_outcome: 5,
-        match_duration_s: 0,
-      }),
-    ];
-    expect(summarise(matches)).toMatchObject({
-      count: 3,
-      wins: 1,
-      losses: 1,
-      unscored: 1,
-      winRate: 50,
-      kda: 7,
-      networthPerMinute: 600,
-      economyCount: 2,
-    });
-    expect(heroSummaries(matches).map((h) => [h.heroId, h.count])).toEqual([
-      [1, 2],
-      [2, 1],
-    ]);
-    expect(
-      summarise([fixture({ player_kills: undefined, net_worth: null })]),
-    ).toMatchObject({ kills: null, kda: null, networthPerMinute: null });
-    expect(summarise([])).toMatchObject({ count: 0, winRate: null, kda: null });
-    expect(summarise([fixture({ player_deaths: 0 })]).kda).toBe(14);
-    expect(() => fixture({ match_id: Number.MAX_SAFE_INTEGER + 1 })).toThrow();
   });
   it("allows only safe HTTPS image URLs", () => {
     expect(safeImage("https://assets.deadlock-api.com/image.png")).toBe(
@@ -208,13 +174,9 @@ describe("API transport and offline cache", () => {
     fetcher.mockResolvedValueOnce(Response.json({ wrong: "shape" }));
     expect((await client.request(request)).warning).toContain("incompatible");
   });
-  it("rejects account-mismatched history and card responses rather than mislabelling them", async () => {
+  it("rejects account-mismatched history responses rather than mislabelling them", async () => {
     const { client } = setup([fixture({ account_id: 999 })]);
     await expect(client.request(request)).rejects.toThrow("incompatible");
-    const card = setup({ account_id: 999 });
-    await expect(
-      card.client.request({ resource: "card", accountId: 1234 }),
-    ).rejects.toThrow("incompatible");
   });
   it("ignores incompatible cache entries and survives cache read/write failures", async () => {
     const { client, cache, entries, fetcher } = setup();
@@ -252,47 +214,4 @@ describe("API transport and offline cache", () => {
     await client.request({ resource: "heroes" });
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
-});
-
-it("recovers only verified player match IDs and preserves cached history", async () => {
-  const s = setup();
-  await s.client.request(request);
-  s.fetcher.mockImplementation(async (url) => {
-    const matchId = Number(String(url).split("/matches/")[1]?.split("/")[0]);
-    if (matchId === 999) return new Response("", { status: 404 });
-    return Response.json({
-      match_info: {
-        match_id: matchId,
-        start_time: 50,
-        duration_s: 1200,
-        game_mode: 1,
-        match_mode: 1,
-        winning_team: 0,
-        players: [
-          {
-            account_id: matchId === 456 ? 1234 : 5678,
-            hero_id: 6,
-            team: 0,
-            kills: 2,
-            deaths: 1,
-            assists: 3,
-            net_worth: 10000,
-            last_hits: 100,
-          },
-        ],
-      },
-    });
-  });
-  const result = await s.client.recoverHistory(1234, [456, 456, 789, 999]);
-  expect(result.recovered).toBe(1);
-  expect(result.errors).toHaveLength(2);
-  const archive = (await s.client.request(request)).data as ReturnType<
-    typeof fixture
-  >[];
-  expect(archive.map((m) => m.match_id)).toEqual([123, 456]);
-  expect(archive[1].player_match_outcome).toBe(1);
-  await expect(s.client.recoverHistory(1234, [0])).rejects.toThrow();
-  await expect(
-    s.client.recoverHistory(1234, Array(31).fill(456)),
-  ).rejects.toThrow();
 });

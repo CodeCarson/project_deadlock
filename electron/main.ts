@@ -3,7 +3,6 @@ import {
   BrowserWindow,
   ipcMain,
   powerSaveBlocker,
-  shell,
   screen,
 } from "electron";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
@@ -111,14 +110,6 @@ else {
       ipcMain.handle("api:request", (event, raw) => {
         trusted(event);
         return api.request(raw);
-      });
-      ipcMain.handle("api:importHistory", (event, accountId, archive) => {
-        trusted(event);
-        return api.importHistory(accountId, archive);
-      });
-      ipcMain.handle("api:recoverHistory", (event, accountId, ids) => {
-        trusted(event);
-        return api.recoverHistory(accountId, ids);
       });
       const voice = new AlertVoice(
         app.isPackaged ? process.resourcesPath : join(here, "../.."),
@@ -329,18 +320,7 @@ else {
             backgroundThrottling: false,
           },
         });
-        window.webContents.setWindowOpenHandler(({ url }) => {
-          if (
-            [
-              "https://api.deadlock-api.com/docs",
-              "https://deadlock-api.com/",
-              "https://deadlock-api.com",
-              "https://github.com/deadlock-api/deadlock-api-ingest",
-            ].includes(url)
-          )
-            void shell.openExternal(url);
-          return { action: "deny" };
-        });
+        window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
         window.webContents.on("will-navigate", (event, url) => {
           if (url !== productionUrl && (app.isPackaged || url !== devUrl + "/"))
             event.preventDefault();
@@ -356,24 +336,6 @@ else {
         else void window.loadFile(join(here, "../../dist/index.html"));
       };
       createWindow();
-      // Collect new indexed games even while the renderer is on another page.
-      // Ten-minute polling stays below the provider's bot-friend hourly allowance.
-      const refreshHistory = () => {
-        if (
-          settings.autoRefreshStats &&
-          settings.accountId &&
-          engine.snapshot().status !== "running"
-        )
-          void api
-            .request({
-              resource: "history",
-              includeStatlocker: true,
-              accountId: Number(settings.accountId),
-              refresh: true,
-            })
-            .catch(() => {});
-      };
-      setInterval(refreshHistory, 600000);
       setInterval(() => {
         detection.check();
         sendAlerts(engine.tick());

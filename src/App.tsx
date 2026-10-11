@@ -1,5 +1,5 @@
 import { DeadlockArt, eventArtwork } from "./components/DeadlockArt";
-import { useEffect, useRef, useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   ArrowRight,
@@ -47,11 +47,6 @@ import { formatClock, parseClock } from "./core/timer";
 import { notify, playSound, unlockAudio, speak } from "./core/audio";
 import { RuleEditor } from "./components/RuleEditor";
 import { ClockCaptureSettings } from "./components/ClockCaptureSettings";
-const PlayerDashboard = lazy(() =>
-  import("./components/PlayerDashboard").then((module) => ({
-    default: module.PlayerDashboard,
-  })),
-);
 import { TeamPlanner } from "./components/TeamPlanner";
 import { restoreTimerDefaults } from "./core/settings";
 import { bundledVoices, selectedVoiceId } from "./core/voice-packs";
@@ -495,7 +490,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.7.3 · Independent community tool</span>
+          <span className="version">v0.7.4 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">
@@ -541,7 +536,7 @@ export default function App() {
                         ? "THE OPERATOR’S DESK"
                         : page === "Team Planner"
                           ? "THE CURSED APPLE · SQUAD ROOM"
-                          : "THE CURSED APPLE · MATCH ARCHIVE"}
+                          : "THE CURSED APPLE"}
                   </span>
                   <h1>
                     {page === "Live Match"
@@ -557,7 +552,7 @@ export default function App() {
                         ? "Tune your reminders to the way you play."
                         : page === "Team Planner"
                           ? "Build a lineup around your team's strongest heroes."
-                          : "Review your games, choose one change and track your progress."}
+                          : ""}
                   </p>
                 </div>
                 {(page === "Live Match" || page === "Settings") && (
@@ -949,25 +944,6 @@ export default function App() {
                       }).then(() => {})
                     }
                   />
-                  <section className="panel settings-panel">
-                    <h2>Match archive updates</h2>
-                    <label className="checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={settings.autoRefreshStats}
-                        disabled={busy}
-                        onChange={(e) =>
-                          change({ autoRefreshStats: e.target.checked })
-                        }
-                      />
-                      Check for new matches every ten minutes outside a running
-                      match
-                    </label>
-                    <small>
-                      Indexed games are merged into the local archive. Steam
-                      access is configured in Stats.
-                    </small>
-                  </section>
                   <div className="settings-grid">
                     <section className="panel settings-panel">
                       <div className="section-heading">
@@ -1154,45 +1130,18 @@ export default function App() {
                   accountId={settings.accountId}
                   saved={settings.planner}
                   onSave={(planner) =>
-                    save({ ...settingsRef.current, planner }).then(() => {})
+                    save({
+                      ...settingsRef.current,
+                      planner,
+                      accountId: planner.accountIds[0],
+                    }).then(() => {})
                   }
                 />
               )}
               {page === "Stats" && (
-                <Suspense
-                  fallback={
-                    <section className="panel player-empty" role="status">
-                      Loading player tools…
-                    </section>
-                  }
-                >
-                  <PlayerDashboard
-                    view="Stats"
-                    autoRefresh={settings.autoRefreshStats}
-                    savedFilters={settings.playerFilters}
-                    research={settings.playerResearch[settings.accountId]}
-                    onResearchChange={(research) =>
-                      save({
-                        ...settingsRef.current,
-                        playerResearch: {
-                          ...settingsRef.current.playerResearch,
-                          [settings.accountId]: research,
-                        },
-                      })
-                    }
-                    onFiltersChange={(playerFilters) =>
-                      change({ playerFilters })
-                    }
-                    accountId={settings.accountId}
-                    onAccountChange={(accountId) =>
-                      save({
-                        ...settings,
-                        accountId,
-                        playerFilters: defaultSettings.playerFilters,
-                      })
-                    }
-                  />
-                </Suspense>
+                <section className="panel stats-coming-soon">
+                  <h2>Coming soon</h2>
+                </section>
               )}
             </>
           )}

@@ -64,54 +64,6 @@ export const settingsSchema = z
         "Invalid Steam account ID.",
       )
       .default(""),
-    playerResearch: z
-      .record(
-        z.string().regex(/^[1-9][0-9]{0,9}$/),
-        z.object({
-          ratingHistory: z
-            .array(
-              z.object({
-                score: z.number().finite().min(0).max(100),
-                count: z.number().int().min(10).max(60),
-                mode: z.union([z.literal(1), z.literal(4)]),
-                at: z.number().finite().nonnegative(),
-                anchor: z.number().int().positive().safe(),
-                model: z.union([z.literal(1), z.literal(2)]),
-              }),
-            )
-            .max(50)
-            .default([]),
-          expectedTotal: z
-            .number()
-            .int()
-            .min(1)
-            .max(100000)
-            .nullable()
-            .default(null),
-          notes: z
-            .array(
-              z.object({
-                matchId: z.number().int().positive().safe(),
-                text: z.string().max(1500),
-              }),
-            )
-            .max(500)
-            .default([]),
-          goal: z
-            .object({
-              metric: z.enum(["deaths", "combat", "farm"]),
-              target: z.number().finite().nonnegative().max(10000),
-              baseline: z.number().finite().nonnegative(),
-              anchor: z.number().int().positive().safe(),
-              hero: z.string(),
-              mode: z.number().int(),
-              createdAt: z.number().nonnegative(),
-            })
-            .nullable()
-            .default(null),
-        }),
-      )
-      .default({}),
     planner: z
       .object({
         mode: z.union([z.literal(1), z.literal(4)]).default(1),
@@ -145,13 +97,6 @@ export const settingsSchema = z
         excluded: [],
         favorites: [[], [], [], [], [], []],
       }),
-    playerFilters: z
-      .object({
-        hero: z.string(),
-        mode: z.string(),
-        days: z.enum(["all", "7", "30", "90"]),
-      })
-      .default({ hero: "all", mode: "all", days: "all" }),
     volume: z.number().min(0).max(1),
     sound: z.enum([
       "chime",
@@ -166,7 +111,6 @@ export const settingsSchema = z
     voiceId: z.string().max(300).default("pack:silas"),
     voiceStyle: z.enum(["operator", "lookout"]).default("operator"),
     alertSpeed: z.number().finite().min(0.75).max(2).default(1.35),
-    autoRefreshStats: z.boolean().default(true),
     combinedBreakables: z.boolean().default(false),
     automaticTracking: z.boolean().default(false),
     clockSyncSeconds: z.number().int().min(5).max(60).default(15),
@@ -257,11 +201,6 @@ export interface Bridge {
   }>;
   resumeAutomaticTracking(): Promise<void>;
   request(request: ApiRequest): Promise<ApiResult>;
-  importHistory(accountId: number, archive: unknown): Promise<ApiResult>;
-  recoverHistory(
-    accountId: number,
-    matchIds: number[],
-  ): Promise<{ recovered: number; errors: string[] }>;
   alertVoices(): Promise<{ id: string; name: string }[]>;
   stopAlertSpeech(): Promise<void>;
   speakAlert(

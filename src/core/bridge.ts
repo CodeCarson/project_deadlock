@@ -53,9 +53,6 @@ function browserBridge(): Bridge {
     },
     async resumeAutomaticTracking() {},
     request: (request) => api.request(request),
-    importHistory: (accountId, archive) =>
-      api.importHistory(accountId, archive),
-    recoverHistory: (accountId, ids) => api.recoverHistory(accountId, ids),
     async alertVoices() {
       return [];
     },

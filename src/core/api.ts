@@ -106,94 +106,6 @@ export const profileSchema = z.object({
   avatarfull: z.string().nullish(),
 });
 export type Profile = z.infer<typeof profileSchema>;
-export const cardSchema = z.object({
-  account_id: id,
-  ranked_badge_level: metric,
-  ranked_rank: metric,
-  ranked_subrank: metric,
-});
-export type Card = z.infer<typeof cardSchema>;
-export const rankSchema = z.object({ tier: id, name: z.string() });
-export type Rank = z.infer<typeof rankSchema>;
-export const sampleSchema = z.object({
-  time_stamp_s: count,
-  net_worth: metric,
-  player_damage: metric,
-  boss_damage: metric,
-  player_healing: metric,
-  teammate_healing: metric,
-  kills: metric,
-  deaths: metric,
-  assists: metric,
-  creep_kills: metric,
-  neutral_kills: metric,
-  gold_death_loss: metric,
-  gold_lane_creep: metric,
-  gold_lane_creep_orbs: metric,
-  gold_neutral_creep: metric,
-  gold_neutral_creep_orbs: metric,
-  gold_player: metric,
-  gold_player_orbs: metric,
-  gold_boss: metric,
-  gold_boss_orb: metric,
-  gold_treasure: metric,
-  gold_denied: metric,
-});
-export const detailPlayerSchema = z.object({
-  account_id: id,
-  hero_id: id,
-  team: z.number().int(),
-  kills: metric,
-  deaths: metric,
-  assists: metric,
-  net_worth: metric,
-  last_hits: metric,
-  denies: metric,
-  player_match_outcome: z.number().int().nullish(),
-  stats: z
-    .array(sampleSchema)
-    .max(10000)
-    .nullish()
-    .transform((v) => v ?? []),
-  death_details: z
-    .array(z.object({ game_time_s: count, death_duration_s: metric }))
-    .max(1000)
-    .nullish()
-    .transform((v) => v ?? []),
-  items: z
-    .array(z.object({ game_time_s: count, item_id: id, sold_time_s: metric }))
-    .max(1000)
-    .nullish()
-    .transform((v) => v ?? []),
-});
-export const metadataSchema = z.object({
-  match_info: z.object({
-    match_id: id,
-    start_time: count,
-    duration_s: count,
-    game_mode: z.number().int().nullish(),
-    match_mode: z.number().int().nullish(),
-    winning_team: z.number().int().nullish(),
-    players: z.array(detailPlayerSchema).max(100),
-  }),
-});
-export type MatchMetadata = z.infer<typeof metadataSchema>;
-export const itemSchema = z.object({ id, name: z.string() });
-export type Item = z.infer<typeof itemSchema>;
-export const archiveSchema = z
-  .object({
-    format: z.literal("deadlock-companion-history"),
-    version: z.literal(1),
-    accountId: z.number().int().min(1).max(4294967295),
-    matches: z.array(matchSchema).max(10000),
-  })
-  .superRefine((a, ctx) => {
-    if (a.matches.some((m) => m.account_id !== a.accountId))
-      ctx.addIssue({
-        code: "custom",
-        message: "Archive contains unverified or another player's matches.",
-      });
-  });
 export function mergeHistory(saved: Match[], fresh: Match[]) {
   const matches = new Map(saved.map((m) => [m.match_id, m]));
   for (const m of fresh) {
@@ -218,12 +130,8 @@ export const apiRequestSchema = z.object({
   resource: z.enum([
     "history",
     "profile",
-    "card",
     "heroes",
-    "ranks",
     "search",
-    "metadata",
-    "items",
     "metrics",
     "heroBenchmarks",
     "synergy",
@@ -234,7 +142,6 @@ export const apiRequestSchema = z.object({
   durationBand: z.number().int().min(0).max(3).optional(),
   cohort: z.enum(["ranked", "elite"]).optional(),
   query: z.string().trim().min(2).max(80).optional(),
-  matchId: id.positive().optional(),
   accountId: z.number().int().min(1).max(4294967295).optional(),
   refresh: z.boolean().optional(),
   forceRefetch: z.boolean().optional(),
@@ -298,14 +205,6 @@ export function validateResource(
     case "profile":
     case "search":
       return z.array(profileSchema).max(1000).parse(data);
-    case "metadata":
-      return metadataSchema.parse(data);
-    case "items":
-      return z.array(itemSchema).parse(data);
-    case "card":
-      return cardSchema.parse(data);
-    case "ranks":
-      return z.array(rankSchema).parse(data);
   }
 }
 export function parseAccount(input: string): number {
@@ -384,16 +283,10 @@ export function apiPath(raw: ApiRequest) {
   }
   if (request.resource === "heroes")
     return "/v1/assets/heroes?only_active=true";
-  if (request.resource === "ranks") return "/v1/assets/ranks";
-  if (request.resource === "items") return "/v1/assets/items";
   if (request.resource === "search") {
     if (!request.query)
       throw new Error("Enter at least two characters to search.");
     return `/v1/players/steam-search?search_query=${encodeURIComponent(request.query)}&limit=8&min_matches_played_last_30d=0`;
-  }
-  if (request.resource === "metadata") {
-    if (!request.matchId) throw new Error("A match ID is required.");
-    return `/v1/matches/${request.matchId}/metadata?disable_steam=true`;
   }
   if (!request.accountId) throw new Error("A player account ID is required.");
   switch (request.resource) {
@@ -401,8 +294,6 @@ export function apiPath(raw: ApiRequest) {
       return `/v1/players/${request.accountId}/match-history${request.forceRefetch ? "?force_refetch=true" : ""}`;
     case "profile":
       return `/v1/players/steam?account_ids=${request.accountId}${request.refresh ? "&refresh=true" : ""}`;
-    case "card":
-      return `/v1/players/${request.accountId}/card`;
   }
 }
 /** Fixed-host API transport: the renderer supplies an enum and account ID, never a URL. */
@@ -425,7 +316,7 @@ export class ApiClient {
               request.resource,
             )
           ? `${request.resource}-${request.analysisMode}-${request.resource === "metrics" ? request.heroId : "all"}-${request.durationBand ?? "all"}-${request.cohort ?? "ranked"}`
-          : `${request.resource}-${request.resource === "metadata" ? request.matchId : (request.accountId ?? "all")}`;
+          : `${request.resource}-${request.accountId ?? "all"}`;
     const pending = this.pending.get(key);
     if (pending) return pending;
     const result = (
@@ -603,9 +494,7 @@ export class ApiClient {
     } catch {
       /* Missing or incompatible entries are fetched again. */
     }
-    const ttl = ["heroes", "ranks", "items", "metadata"].includes(
-      request.resource,
-    )
+    const ttl = ["heroes"].includes(request.resource)
       ? 86400000
       : ["metrics", "heroBenchmarks", "synergy", "compositions"].includes(
             request.resource,
@@ -667,11 +556,7 @@ export class ApiClient {
               : "Deadlock API rate limit reached. Please wait before refreshing.",
           );
         if (response.status === 404)
-          throw new Error(
-            request.resource === "metadata"
-              ? "Detailed data is not indexed for this match. Existing history and notes are kept."
-              : "No public data was found for this account yet.",
-          );
+          throw new Error("No public data was found for this account yet.");
         if (response.status === 401 || response.status === 403)
           throw new Error(
             "Access to the public Deadlock API was denied. Check network access or API availability.",
@@ -745,129 +630,8 @@ export class ApiClient {
       );
     }
   }
-  async recoverHistory(accountId: number, rawIds: unknown) {
-    apiPath({ resource: "history", accountId });
-    const ids = [
-      ...new Set(z.array(id.positive()).min(1).max(30).parse(rawIds)),
-    ];
-    const matches: Match[] = [],
-      errors: string[] = [];
-    let next = 0;
-    await Promise.all(
-      Array.from({ length: Math.min(3, ids.length) }, async () => {
-        while (next < ids.length) {
-          const matchId = ids[next++];
-          try {
-            const result = await this.request({
-              resource: "metadata",
-              matchId,
-            });
-            const info = metadataSchema.parse(result.data).match_info;
-            const player = info.players.find((p) => p.account_id === accountId);
-            if (!player) throw new Error("Your account is not in this match.");
-            matches.push(
-              matchSchema.parse({
-                account_id: accountId,
-                match_id: info.match_id,
-                hero_id: player.hero_id,
-                start_time: info.start_time,
-                game_mode: info.game_mode,
-                match_mode: info.match_mode,
-                match_duration_s: info.duration_s,
-                player_kills: player.kills,
-                player_deaths: player.deaths,
-                player_assists: player.assists,
-                last_hits: player.last_hits,
-                denies: player.denies,
-                net_worth: player.net_worth,
-                player_match_outcome:
-                  player.player_match_outcome ??
-                  ((info.winning_team === 0 || info.winning_team === 1) &&
-                  (player.team === 0 || player.team === 1)
-                    ? player.team === info.winning_team
-                      ? 1
-                      : 2
-                    : null),
-              }),
-            );
-          } catch (e) {
-            errors.push(
-              `#${matchId}: ${e instanceof Error ? e.message : "Unavailable"}`,
-            );
-          }
-        }
-      }),
-    );
-    if (matches.length)
-      await this.importHistory(accountId, {
-        format: "deadlock-companion-history",
-        version: 1,
-        accountId,
-        matches,
-      });
-    return { recovered: matches.length, errors };
-  }
-  importHistory(accountId: number, raw: unknown): Promise<ApiResult> {
-    apiPath({ resource: "history", accountId });
-    const archive = archiveSchema.parse(raw);
-    if (archive.accountId !== accountId)
-      throw new Error("This archive belongs to another player.");
-    const key = `history-${accountId}`;
-    if (this.pending.has(key))
-      throw new Error(
-        "Wait for the history request to finish before importing.",
-      );
-    const operation = this.loadArchive(key, accountId, archive).finally(() =>
-      this.pending.delete(key),
-    );
-    this.pending.set(key, operation);
-    return operation;
-  }
-  private async loadArchive(
-    key: string,
-    accountId: number,
-    archive: z.infer<typeof archiveSchema>,
-  ): Promise<ApiResult> {
-    let stored: CacheEntry | undefined;
-    try {
-      stored = cacheSchema.parse(await this.cache.get(key));
-      stored.data = this.validate(
-        { resource: "history", accountId },
-        stored.data,
-      );
-    } catch {
-      stored = undefined;
-    }
-    const matches = mergeHistory(
-      (stored?.data ?? []) as Match[],
-      archive.matches,
-    );
-    const entry: CacheEntry = {
-      version: CACHE_VERSION,
-      data: matches,
-      fetchedAt: stored?.fetchedAt ?? 0,
-      historySource: stored?.historySource ?? "unknown",
-      historyChecks: stored?.historyChecks,
-      forceFetchedAt: stored?.forceFetchedAt,
-      providerCount: stored?.providerCount,
-      retainedCount: Math.max(0, matches.length - (stored?.providerCount ?? 0)),
-    };
-    await this.cache.set(key, entry);
-    return {
-      ...entry,
-      cached: true,
-      stale: !stored,
-      warning:
-        "Imported local archive. These records are preserved on refresh; coverage is still not guaranteed complete.",
-    };
-  }
   private validate(request: ApiRequest, raw: unknown) {
     const data = validateResource(request.resource, raw);
-    if (
-      request.resource === "card" &&
-      (data as Card).account_id !== request.accountId
-    )
-      throw new Error("Player card belongs to another account.");
     if (
       request.resource === "history" &&
       (data as Match[]).some(
@@ -875,11 +639,6 @@ export class ApiClient {
       )
     )
       throw new Error("Match history belongs to another account.");
-    if (
-      request.resource === "metadata" &&
-      (data as MatchMetadata).match_info.match_id !== request.matchId
-    )
-      throw new Error("Metadata belongs to another match.");
     return data;
   }
 }
@@ -889,55 +648,6 @@ export function outcome(match: Match): "win" | "loss" | "unscored" {
     : match.player_match_outcome === 2
       ? "loss"
       : "unscored";
-}
-export function summarise(matches: Match[]) {
-  const wins = matches.filter((m) => outcome(m) === "win").length;
-  const losses = matches.filter((m) => outcome(m) === "loss").length;
-  const total = (key: "player_kills" | "player_deaths" | "player_assists") =>
-    matches.length && matches.every((m) => m[key] !== null)
-      ? matches.reduce((sum, m) => sum + m[key]!, 0)
-      : null;
-  const kills = total("player_kills"),
-    deaths = total("player_deaths"),
-    assists = total("player_assists");
-  const economy = matches.filter(
-    (m) =>
-      m.net_worth !== null &&
-      m.match_duration_s !== null &&
-      m.match_duration_s > 0,
-  );
-  return {
-    count: matches.length,
-    wins,
-    losses,
-    unscored: matches.length - wins - losses,
-    winRate: wins + losses ? (100 * wins) / (wins + losses) : null,
-    kills,
-    deaths,
-    assists,
-    kda:
-      kills !== null && deaths !== null && assists !== null
-        ? (kills + assists) / Math.max(1, deaths)
-        : null,
-    networthPerMinute: economy.length
-      ? economy.reduce(
-          (sum, m) => sum + m.net_worth! / (m.match_duration_s! / 60),
-          0,
-        ) / economy.length
-      : null,
-    economyCount: economy.length,
-  };
-}
-export function heroSummaries(matches: Match[]) {
-  const groups = new Map<number, Match[]>();
-  for (const m of matches) {
-    const group = groups.get(m.hero_id) ?? [];
-    group.push(m);
-    groups.set(m.hero_id, group);
-  }
-  return [...groups]
-    .map(([heroId, entries]) => ({ heroId, ...summarise(entries) }))
-    .sort((a, b) => b.count - a.count);
 }
 export function safeImage(value: string | null | undefined) {
   try {
@@ -949,12 +659,3 @@ export function safeImage(value: string | null | undefined) {
     return undefined;
   }
 }
-export const gameModeName = (mode: number) =>
-  ({
-    1: "Normal",
-    2: "1v1 test",
-    3: "Sandbox",
-    4: "Street Brawl",
-    5: "Explore NYC",
-    6: "Internal",
-  })[mode] ?? `Mode ${mode}`;

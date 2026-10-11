@@ -110,10 +110,6 @@ async function fixtures(page: Page) {
           matches: 100,
         },
       ];
-    else if (p.endsWith("/metadata")) {
-      await route.fulfill({ status: 404, json: {} });
-      return;
-    }
     await route.fulfill({
       json: data,
       headers: {
@@ -126,90 +122,22 @@ async function fixtures(page: Page) {
 async function profile(page: Page) {
   await fixtures(page);
   await page.goto("/");
-  await page.getByRole("button", { name: "Stats", exact: true }).click();
-  await page.getByLabel("Find your player profile").fill("1234");
-  await page.getByRole("button", { name: "Load player", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Tester 1234", exact: true }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Team Planner", exact: true }).click();
+  await page.getByLabel("Position 1 Steam name or ID").fill("1234");
+  await page
+    .locator(".planner-slot")
+    .first()
+    .getByRole("button", { name: "Load player", exact: true })
+    .click();
+  await expect(page.locator(".planner-slot").first()).toContainText(
+    "Tester 1234",
+  );
 }
-test("one Stats workspace gives hero-aware game coaching, a saved Companion estimate and three performance-ranked heroes", async ({
-  page,
-}) => {
-  await profile(page);
-  await expect(
-    page
-      .getByRole("navigation", { name: "Main navigation" })
-      .getByRole("button"),
-  ).toHaveCount(3);
-  await page
-    .getByRole("button", { name: "Calculate Companion rank", exact: true })
-    .click();
-  await expect(
-    page.getByText("Performance estimate updated.", { exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".top-hero-card")).toHaveCount(3);
-  await expect(
-    page
-      .getByRole("group", { name: "Hero-adjusted performance strengths" })
-      .getByRole("meter"),
-  ).toHaveCount(4);
-  await expect(page.locator(".rank-emblem")).toHaveAttribute(
-    "src",
-    /deadlock\/rank-\d+\.webp$/,
-  );
-  await expect(page.getByAltText("Deadlock", { exact: true })).toBeVisible();
-  await expect(page.locator(".top-hero-card").first()).toContainText(
-    "Infernus",
-  );
-  await expect(page.locator(".top-hero-card").last()).toContainText("Abrams");
-  await page.getByLabel("Match to review").selectOption("5001");
-  await expect(page.locator(".match-coaching")).toContainText("Review this");
-  await expect(page.locator(".match-coaching")).toContainText("Deaths");
-  await expect(page.locator(".match-coaching")).toContainText("brawler");
-  const comparison = page.getByRole("region", {
-    name: "This game versus hero reference",
-  });
-  await expect(comparison.locator(".comparison-row")).toHaveCount(4);
-  await expect(comparison.locator(".comparison-row.focus")).toContainText(
-    "Deaths",
-  );
-  await expect(comparison.locator(".comparison-row.focus")).toHaveAttribute(
-    "data-direction",
-    "review",
-  );
-  await page.screenshot({ path: "/tmp/deadlock-stats-v7.png", fullPage: true });
-  await page
-    .getByRole("button", { name: "Add this focus to my note", exact: true })
-    .click();
-  await expect(page.getByLabel("Match review note")).toHaveValue(
-    /Abrams.*route back to cover/,
-  );
-  await page
-    .getByRole("button", { name: "Save review note", exact: true })
-    .click();
-  await page.reload();
-  await page.getByRole("button", { name: "Stats", exact: true }).click();
-  await expect(page.getByText(/Saved estimate:/)).toBeVisible();
-  await page.getByLabel("Match to review").selectOption("5001");
-  await expect(page.getByLabel("Match review note")).toHaveValue(
-    /Abrams.*route back to cover/,
-  );
-  await page.setViewportSize({ width: 650, height: 900 });
-  await expect
-    .poll(() =>
-      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-    )
-    .toBe(true);
-});
 test("team planner resolves Steam suggestions, honors a preferred hero and shows recorded composition evidence", async ({
   page,
 }) => {
   await profile(page);
-  await page.getByRole("button", { name: "Team Planner", exact: true }).click();
-  await expect(page.locator(".planner-slot").first()).toContainText(
-    "Tester 1234",
-  );
+
   await page.getByLabel("Position 2 Steam name or ID").fill("Team");
   const slot = page.locator(".planner-slot").nth(1);
   await slot.getByRole("option").getByRole("button").click();
@@ -262,10 +190,7 @@ test("planner comfort choices and exclusions produce different personal alternat
   page,
 }) => {
   await profile(page);
-  await page.getByRole("button", { name: "Team Planner", exact: true }).click();
-  await expect(page.locator(".planner-slot").first()).toContainText(
-    "Tester 1234",
-  );
+
   await page.getByLabel("Position 1 comfort hero").selectOption("11");
   await page.getByLabel("Exclude a hero", { exact: true }).selectOption("6");
   await page.getByLabel("Selection style").selectOption("explore");

@@ -11,11 +11,10 @@ import {
   type Synergy,
   type Composition,
 } from "../core/api";
-import { type Evidence } from "../core/performance";
+import { type Evidence } from "../core/hero-fit";
 import { heroRoles } from "../core/hero-guide";
 import { planTeam, playerHeroFits, type PlannerPlayer } from "../core/planner";
-import { winInterval } from "../core/coaching";
-import { loadEvidence } from "./evidence";
+import { loadEvidence, winInterval } from "./planner-evidence";
 import { PlayerSearch } from "./PlayerSearch";
 import type { Settings } from "../core/schema";
 type Slot = PlannerPlayer & { input: string; loading: boolean; error: string };

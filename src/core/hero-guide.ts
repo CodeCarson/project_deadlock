@@ -51,39 +51,3 @@ const deathAdvice: Record<string, string> = {
     "Use control to isolate a reachable target and keep your escape available.",
   Lash: "Choose your landing and exit before diving; check your team's position first.",
 };
-export function heroAction(hero: Hero | undefined, metric: string) {
-  if (metric === "deaths")
-    return (
-      deathAdvice[hero?.name ?? ""] ??
-      {
-        brawler:
-          "Commit only when an ally can follow; leave yourself a route back to cover.",
-        assassin: "Choose an entry and an exit before going for the backline.",
-        marksman:
-          "Fight from cover with an escape route; move when enemies close the gap.",
-        mystic:
-          "Keep your escape or defensive cooldown available before committing.",
-      }[hero?.hero_type ?? ""] ??
-      "Count visible threats and choose an escape route before committing."
-    );
-  const actions: Record<string, string> = {
-    combat: heroRoles(hero).includes("control")
-      ? "Arrive before the next objective fight with your control ability ready and a teammate in range."
-      : "Clear a nearby wave, then arrive with a teammate before the next objective fight.",
-    farm: "Clear the next reachable wave before rotating; take a nearby camp along that route.",
-    economy:
-      "Spend before the next contested objective; protect unspent souls instead of forcing a fight while behind.",
-    damage:
-      hero?.hero_type === "marksman"
-        ? "Take a covered firing angle and stay in range long enough to deal sustained damage."
-        : "Enter the next fight with your damage cooldowns ready and a target your team can reach.",
-    objectives:
-      "After the next won fight, move with your team to a safe Guardian or Walker.",
-    healing:
-      "Keep a teammate in ability range before the next fight; save your defensive cooldown for them.",
-  };
-  return (
-    actions[metric] ??
-    "Review one death and write down the decision you would change."
-  );
-}

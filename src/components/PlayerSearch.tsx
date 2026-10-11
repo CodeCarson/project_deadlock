@@ -216,9 +216,9 @@ export function PlayerSearch({
         )}
         <small>
           Enter your Steam display name and choose your profile. Matching names
-          can belong to different people; check the avatar and account ID. We
-          collect available matches into one archive. Steam IDs and numeric
-          profile links also work.
+          can belong to different people; check the avatar and account ID. The
+          planner uses available matches to compare your hero experience. Steam
+          IDs and numeric profile links also work.
         </small>
       </form>
     </section>
