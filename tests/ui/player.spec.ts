@@ -193,7 +193,9 @@ test("Phase 3 views use available history, preserve filters and distinguish rebu
   await expect(
     page.locator(".archive-count").getByText("3", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/Indexed history only/)).toBeVisible();
+  await expect(
+    page.getByText(/Indexed archive; full Steam history requires bot access/),
+  ).toBeVisible();
   await page
     .locator(".stats-disclosure > summary")
     .filter({ hasText: "Explore hero statistics & long-term charts" })
@@ -277,4 +279,9 @@ test("history pagination and sorting include matches beyond the first page", asy
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+// Existing fixtures isolate unavailable secondary services; dedicated history tests mock both.
+test.beforeEach(async ({ page }) => {
+  await page.route("https://statlocker.gg/**", (route) => route.abort());
 });

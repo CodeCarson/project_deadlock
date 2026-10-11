@@ -108,6 +108,7 @@ export function PlayerDashboard({
         Promise.resolve().then(() =>
           bridge.request({
             resource,
+            includeStatlocker: resource === "history",
             accountId:
               resource === "heroes" || resource === "ranks" ? undefined : id,
             refresh,

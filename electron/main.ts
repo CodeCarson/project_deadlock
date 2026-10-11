@@ -335,6 +335,7 @@ else {
               "https://api.deadlock-api.com/docs",
               "https://deadlock-api.com/",
               "https://deadlock-api.com",
+              "https://github.com/deadlock-api/deadlock-api-ingest",
             ].includes(url)
           )
             void shell.openExternal(url);
@@ -366,6 +367,7 @@ else {
           void api
             .request({
               resource: "history",
+              includeStatlocker: true,
               accountId: Number(settings.accountId),
               refresh: true,
             })

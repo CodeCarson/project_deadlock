@@ -2,7 +2,7 @@
 """Developer-only Supertonic 3 clip generation. Models/inference never ship.
 
 Install sherpa-onnx==1.13.8, numpy, soundfile, ffmpeg; use the checksum-pinned
-model archive in public/voices/NOTICE.txt. Generate all natural/character packs:
+model archive in public/voices/NOTICE.txt. Generate all Silas and June packs:
   python scripts/generate-natural-voices.py /path/to/model
 Append pack IDs to regenerate only those packs; --cue limits regeneration to
 specific cue IDs. Decoded audio peaks are checked to preserve headroom.
@@ -136,7 +136,7 @@ voices = [v for v in catalog["voices"] if v.get("engine") == "supertonic3" and
 if requested - {v["id"] for v in voices}:
     raise SystemExit("Unknown or unsupported requested voice ID")
 manifest = json.loads((ROOT / "public/voices/manifest.json").read_text())
-manifest["model"] = "Kokoro-82M v1.0 int8 + Supertonic 3 int8"
+manifest["model"] = "Supertonic 3 int8"
 with ThreadPoolExecutor(max_workers=2) as pool:
     for clips in pool.map(generate, voices):
         manifest["clips"].update(clips)

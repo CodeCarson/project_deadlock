@@ -2,12 +2,15 @@ import catalog from "../../config/voice-packs.json" with { type: "json" };
 import { shortAnnouncement } from "./alert-cues.js";
 
 export const bundledVoices = catalog.voices;
-export const systemVoiceId = "system:auto";
 export function selectedVoiceId(
   voiceId: string,
   style: "operator" | "lookout",
 ) {
-  return voiceId || (style === "lookout" ? "pack:af_heart" : "pack:am_michael");
+  if (bundledVoices.some((voice) => voice.id === voiceId)) return voiceId;
+  return style === "lookout" ||
+    ["pack:af_heart", "pack:bf_emma"].includes(voiceId)
+    ? "pack:june"
+    : "pack:silas";
 }
 export function bundledVoice(voiceId: string) {
   return bundledVoices.find((voice) => voice.id === voiceId);

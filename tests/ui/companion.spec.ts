@@ -145,3 +145,8 @@ test("current defaults are enabled and editable; Rift shows a window and a manua
   await small.getByRole("button", { name: "Edit rule", exact: true }).click();
   await expect(page.getByLabel("Respawn delay (MM:SS)")).toHaveValue("01:30");
 });
+
+// Existing fixtures isolate unavailable secondary services; dedicated history tests mock both.
+test.beforeEach(async ({ page }) => {
+  await page.route("https://statlocker.gg/**", (route) => route.abort());
+});

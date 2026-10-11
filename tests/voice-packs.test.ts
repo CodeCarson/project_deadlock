@@ -61,9 +61,9 @@ it("ships non-silent, checksum-verified recordings for every built-in alert and 
       ),
     ).size,
   ).toBe(bundledVoices.length);
-  expect(readFileSync(join(folder, "LICENSE-KOKORO.txt"), "utf8")).toContain(
-    "Apache License",
-  );
+  expect(
+    readFileSync(join(folder, "LICENSE-SUPERTONIC-MODEL.txt"), "utf8"),
+  ).toContain("Open RAIL");
 });
 
 it("uses accurate respawn/window clips and leaves arbitrary custom text to system speech", () => {
@@ -87,8 +87,12 @@ it("uses accurate respawn/window clips and leaves arbitrary custom text to syste
   }
 });
 
-it("maps automatic old voice preferences to real bundles and preserves explicit system choices", () => {
-  expect(selectedVoiceId("", "operator")).toBe("pack:am_michael");
-  expect(selectedVoiceId("", "lookout")).toBe("pack:af_heart");
-  expect(selectedVoiceId("Microsoft Zira", "operator")).toBe("Microsoft Zira");
+it("offers only Silas and June and migrates removed voice preferences", () => {
+  expect(bundledVoices.map((v) => v.id)).toEqual(["pack:silas", "pack:june"]);
+  expect(selectedVoiceId("pack:bf_emma", "operator")).toBe("pack:june");
+  expect(selectedVoiceId("pack:seven", "operator")).toBe("pack:silas");
+  expect(selectedVoiceId("pack:june", "operator")).toBe("pack:june");
+  expect(selectedVoiceId("", "operator")).toBe("pack:silas");
+  expect(selectedVoiceId("", "lookout")).toBe("pack:june");
+  expect(selectedVoiceId("Microsoft Zira", "operator")).toBe("pack:silas");
 });

@@ -290,3 +290,8 @@ test("a late response from an earlier Steam-name query cannot replace current su
     page.getByRole("option").filter({ hasText: "Earlier result" }),
   ).toHaveCount(0);
 });
+
+// Existing fixtures isolate unavailable secondary services; dedicated history tests mock both.
+test.beforeEach(async ({ page }) => {
+  await page.route("https://statlocker.gg/**", (route) => route.abort());
+});

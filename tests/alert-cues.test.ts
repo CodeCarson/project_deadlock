@@ -26,6 +26,6 @@ it("validates voice speed, sound options and backwards-compatible defaults", () 
   const { alertSpeed: _, voiceId: __, ...old } = defaultSettings;
   expect(settingsSchema.parse(old)).toMatchObject({
     alertSpeed: 1.35,
-    voiceId: "",
+    voiceId: "pack:silas",
   });
 });

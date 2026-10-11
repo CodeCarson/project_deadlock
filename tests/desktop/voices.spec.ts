@@ -92,7 +92,7 @@ test("production offline voice files decode and finish, including an alert while
           ),
       )
       .toBe(true);
-    await page.getByLabel("Voice", { exact: true }).selectOption("pack:seven");
+    await page.getByLabel("Voice", { exact: true }).selectOption("pack:silas");
     await page.evaluate(() => window.companion!.stopAlertSpeech());
     await page.getByLabel("Speak event announcements").click();
     await expect(page.getByLabel("Speak event announcements")).toBeChecked();
@@ -119,7 +119,7 @@ test("production offline voice files decode and finish, including an alert while
       .toBe(catalog.voices.length + 1);
     expect(
       (await page.evaluate(() => (window as any).voiceStarts)).at(-1).url,
-    ).toContain("/voices/seven/bridge-ready.ogg");
+    ).toContain("/voices/silas/bridge-ready.ogg");
     for (const end of await page.evaluate(() => (window as any).voiceEnds)) {
       expect(end.duration).toBeGreaterThan(0.35);
       expect(end.duration).toBeLessThan(6);

@@ -1,4 +1,5 @@
 import { defaultSettings, settingsSchema, type Settings } from "./schema.js";
+import { selectedVoiceId } from "./voice-packs.js";
 const legacyNames: Record<string, string> = {
   "small-camp": "Small jungle camp",
   "medium-camp": "Medium jungle camp",
@@ -12,6 +13,7 @@ const legacyNames: Record<string, string> = {
 /** Upgrade only untouched Phase 1 placeholders. Custom rules and existing choices are preserved. */
 export function migrateSettings(raw: unknown): Settings {
   let settings = settingsSchema.parse(raw);
+  settings.voiceId = selectedVoiceId(settings.voiceId, settings.voiceStyle);
   if (!settings.combinedBreakables) {
     const boxes = settings.rules.find((r) => r.id === "boxes");
     const statues = settings.rules.find((r) => r.id === "statues");

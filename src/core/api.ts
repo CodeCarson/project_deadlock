@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  fetchStatlockerHistory,
+  historyCheckSchema,
+  type HistoryCheck,
+} from "./statlocker.js";
 
 const count = z.number().finite().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const metric = count.nullish().transform((value) => value ?? null);
@@ -233,6 +238,7 @@ export const apiRequestSchema = z.object({
   accountId: z.number().int().min(1).max(4294967295).optional(),
   refresh: z.boolean().optional(),
   forceRefetch: z.boolean().optional(),
+  includeStatlocker: z.boolean().optional(),
 });
 export type ApiRequest = z.infer<typeof apiRequestSchema>;
 export interface ApiResult {
@@ -245,6 +251,7 @@ export interface ApiResult {
   historySource?: "steam" | "stored" | "unknown";
   providerCount?: number;
   retainedCount?: number;
+  historyChecks?: HistoryCheck[];
 }
 export const CACHE_VERSION = 1;
 export interface CacheEntry {
@@ -254,6 +261,7 @@ export interface CacheEntry {
   historySource?: "steam" | "stored" | "unknown";
   providerCount?: number;
   retainedCount?: number;
+  historyChecks?: HistoryCheck[];
   forceFetchedAt?: number;
 }
 export interface CacheStore {
@@ -267,6 +275,7 @@ const cacheSchema = z.object({
   historySource: z.enum(["steam", "stored", "unknown"]).optional(),
   providerCount: id.optional(),
   retainedCount: id.optional(),
+  historyChecks: z.array(historyCheckSchema).max(2).optional(),
   forceFetchedAt: z.number().finite().nonnegative().optional(),
 });
 export function validateResource(
@@ -419,11 +428,167 @@ export class ApiClient {
           : `${request.resource}-${request.resource === "metadata" ? request.matchId : (request.accountId ?? "all")}`;
     const pending = this.pending.get(key);
     if (pending) return pending;
-    const result = this.load(request, key).finally(() =>
-      this.pending.delete(key),
-    );
+    const result = (
+      request.resource === "history" && request.includeStatlocker
+        ? this.loadCombinedHistory(request, key)
+        : this.load(request, key)
+    ).finally(() => this.pending.delete(key));
     this.pending.set(key, result);
     return result;
+  }
+  private async loadCombinedHistory(
+    request: ApiRequest,
+    key: string,
+  ): Promise<ApiResult> {
+    const secondaryKey = `statlocker-${request.accountId}`;
+    const secondary = async () => {
+      try {
+        const entry = cacheSchema.parse(await this.cache.get(secondaryKey));
+        if (
+          entry.fetchedAt <= this.now() &&
+          this.now() - entry.fetchedAt < (request.refresh ? 30000 : 300000)
+        ) {
+          return {
+            matches: this.validate(
+              { resource: "history", accountId: request.accountId },
+              entry.data,
+            ) as Match[],
+            check: historyCheckSchema.parse(entry.historyChecks?.[0]),
+          };
+        }
+      } catch {
+        /* A missing source cache is fetched independently. */
+      }
+      const result = await fetchStatlockerHistory(
+        request.accountId!,
+        this.fetcher,
+        this.now,
+      );
+      // Keep a previously collected source archive even when access goes away.
+      if (result.check.status === "unavailable") {
+        try {
+          const old = cacheSchema.parse(await this.cache.get(secondaryKey));
+          result.matches = this.validate(
+            { resource: "history", accountId: request.accountId },
+            old.data,
+          ) as Match[];
+          result.check.message += ` ${result.matches.length} previously collected records retained.`;
+        } catch {
+          /* No previous source archive. */
+        }
+      }
+      await this.cache
+        .set(secondaryKey, {
+          version: CACHE_VERSION,
+          data: result.matches,
+          fetchedAt: this.now(),
+          historyChecks: [result.check],
+        })
+        .catch(() => {});
+      return result;
+    };
+    const primaryHistory = async () => {
+      const result = await this.load(request, key);
+      // Once Steam access is confirmed, request its older pages automatically at most hourly.
+      if (
+        result.historySource === "steam" &&
+        !request.forceRefetch &&
+        (result.forceFetchedAt === undefined ||
+          this.now() - result.forceFetchedAt >= 3600000)
+      ) {
+        try {
+          const rebuilt = await this.load(
+            { ...request, forceRefetch: true },
+            key,
+          );
+          return { ...rebuilt, forceFetchedAt: this.now() };
+        } catch (error) {
+          return {
+            ...result,
+            forceFetchedAt: this.now(),
+            warning:
+              error instanceof Error
+                ? error.message
+                : "Older-history rebuild unavailable.",
+          };
+        }
+      }
+      return result;
+    };
+    const [primary, extra] = await Promise.allSettled([
+      primaryHistory(),
+      secondary(),
+    ]);
+    if (
+      primary.status === "rejected" &&
+      (extra.status === "rejected" ||
+        (extra.value.check.status === "unavailable" &&
+          !extra.value.matches.length))
+    )
+      throw primary.reason;
+    const base: ApiResult =
+      primary.status === "fulfilled"
+        ? primary.value
+        : {
+            data: [],
+            fetchedAt: 0,
+            cached: false,
+            stale: true,
+            warning:
+              primary.reason instanceof Error
+                ? primary.reason.message
+                : "Deadlock API unavailable.",
+          };
+    const additional =
+      extra.status === "fulfilled"
+        ? extra.value
+        : {
+            matches: [],
+            check: {
+              provider: "Statlocker" as const,
+              status: "unavailable" as const,
+              count: 0,
+              reportedTotal: null,
+              fetchedAt: this.now(),
+              message: "Statlocker could not be checked.",
+            },
+          };
+    // Primary provider wins overlapping fields; null primary fields keep secondary evidence.
+    const matches = mergeHistory(additional.matches, base.data as Match[]);
+    const checks: HistoryCheck[] = [
+      {
+        provider: "Deadlock API",
+        status:
+          primary.status === "rejected" || base.stale
+            ? "unavailable"
+            : "available",
+        count: base.providerCount ?? (base.data as Match[]).length,
+        reportedTotal: null,
+        fetchedAt: base.fetchedAt,
+        message:
+          base.warning ??
+          (base.historySource === "steam"
+            ? "Steam history received."
+            : "Indexed archive; full Steam history requires bot access."),
+      },
+      additional.check,
+    ];
+    const entry: CacheEntry = {
+      version: CACHE_VERSION,
+      ...base,
+      data: matches,
+      historyChecks: checks,
+      retainedCount: Math.max(0, matches.length - (base.providerCount ?? 0)),
+    };
+    let warning = base.warning;
+    try {
+      await this.cache.set(key, entry);
+    } catch {
+      warning = [warning, "The combined archive could not be saved."]
+        .filter(Boolean)
+        .join(" ");
+    }
+    return { ...base, ...entry, warning };
   }
   private async load(request: ApiRequest, key: string): Promise<ApiResult> {
     // A broken/quota-limited cache is not an API outage.
@@ -682,6 +847,7 @@ export class ApiClient {
       data: matches,
       fetchedAt: stored?.fetchedAt ?? 0,
       historySource: stored?.historySource ?? "unknown",
+      historyChecks: stored?.historyChecks,
       forceFetchedAt: stored?.forceFetchedAt,
       providerCount: stored?.providerCount,
       retainedCount: Math.max(0, matches.length - (stored?.providerCount ?? 0)),

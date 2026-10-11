@@ -288,3 +288,8 @@ test("planner comfort choices and exclusions produce different personal alternat
     page.getByRole("button", { name: "Abrams excluded ×", exact: true }),
   ).toBeVisible();
 });
+
+// Existing fixtures isolate unavailable secondary services; dedicated history tests mock both.
+test.beforeEach(async ({ page }) => {
+  await page.route("https://statlocker.gg/**", (route) => route.abort());
+});

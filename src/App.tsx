@@ -44,13 +44,7 @@ import {
   type TimerSnapshot,
 } from "./core/schema";
 import { formatClock, parseClock } from "./core/timer";
-import {
-  notify,
-  playSound,
-  unlockAudio,
-  availableVoices,
-  speak,
-} from "./core/audio";
+import { notify, playSound, unlockAudio, speak } from "./core/audio";
 import { RuleEditor } from "./components/RuleEditor";
 import { ClockCaptureSettings } from "./components/ClockCaptureSettings";
 const PlayerDashboard = lazy(() =>
@@ -60,12 +54,7 @@ const PlayerDashboard = lazy(() =>
 );
 import { TeamPlanner } from "./components/TeamPlanner";
 import { restoreTimerDefaults } from "./core/settings";
-import {
-  bundledVoices,
-  bundledVoice,
-  selectedVoiceId,
-  systemVoiceId,
-} from "./core/voice-packs";
+import { bundledVoices, selectedVoiceId } from "./core/voice-packs";
 
 type Page = "Stats" | "Team Planner" | "Live Match" | "Settings";
 const navigation: { name: Page; icon: LucideIcon; later?: boolean }[] = [
@@ -104,16 +93,6 @@ export default function App() {
   const [confirmDefaults, setConfirmDefaults] = useState(false);
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [voices, setVoices] = useState<{ id: string; name: string }[]>([]);
-  useEffect(() => {
-    const refresh = () => {
-      void availableVoices().then(setVoices);
-    };
-    refresh();
-    window.speechSynthesis?.addEventListener("voiceschanged", refresh);
-    return () =>
-      window.speechSynthesis?.removeEventListener("voiceschanged", refresh);
-  }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let disposed = false;
@@ -314,42 +293,11 @@ export default function App() {
           disabled={busy}
           onChange={(e) => change({ voiceId: e.target.value })}
         >
-          {["natural", "character", "classic"].map((kind) => (
-            <optgroup
-              key={kind}
-              label={
-                kind === "natural"
-                  ? "Natural voices · offline"
-                  : kind === "character"
-                    ? "Character-inspired · offline"
-                    : "Classic · offline"
-              }
-            >
-              {bundledVoices
-                .filter((voice) => voice.kind === kind)
-                .map((voice) => (
-                  <option key={voice.id} value={voice.id}>
-                    {voice.name}
-                  </option>
-                ))}
-            </optgroup>
+          {bundledVoices.map((voice) => (
+            <option key={voice.id} value={voice.id}>
+              {voice.name}
+            </option>
           ))}
-          <optgroup label="System voices">
-            <option value={systemVoiceId}>System · choose automatically</option>
-            {voices.map((voice) => (
-              <option key={voice.id} value={voice.id}>
-                {voice.name}
-              </option>
-            ))}
-            {settings.voiceId &&
-              settings.voiceId !== systemVoiceId &&
-              !bundledVoice(settings.voiceId) &&
-              !voices.some((voice) => voice.id === settings.voiceId) && (
-                <option value={settings.voiceId}>
-                  {settings.voiceId} · unavailable
-                </option>
-              )}
-          </optgroup>
         </select>
       </div>
       <div className="setting-line">
@@ -388,11 +336,8 @@ export default function App() {
         Test voice
       </button>
       <small className="muted">
-        {bundledVoice(selectedVoiceId(settings.voiceId, settings.voiceStyle))
-          ? "Bundled voice packs play built-in event alerts offline. Custom or renamed reminders use system speech."
-          : "System voices read all reminders, including custom text. Available voices depend on your Windows installation."}{" "}
-        For the most natural cadence, try 1×. The Broker is an original occult
-        announcer, not a Valve character recording.
+        Silas and June play built-in event alerts offline. Custom or renamed
+        reminders use system speech. Try 1× for a natural cadence.
       </small>
     </>
   );
@@ -550,7 +495,7 @@ export default function App() {
             </span>
             <span className="runtime-dot" />
           </div>
-          <span className="version">v0.7.2 · Independent community tool</span>
+          <span className="version">v0.7.3 · Independent community tool</span>
         </div>
       </aside>
       <div className="workspace">

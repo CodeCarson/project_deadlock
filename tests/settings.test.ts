@@ -178,3 +178,23 @@ it("merges an enabled verified breakable with an unconfirmed disabled twin witho
   expect(migrated.rules.at(-1)).toEqual(reminder);
   expect(migrateSettings(migrated)).toEqual(migrated);
 });
+
+it("migrates removed voices without losing the account, speed or clock settings", () => {
+  const base = {
+    ...defaultSettings,
+    accountId: "60392473",
+    voiceId: "pack:seven",
+    alertSpeed: 1.75,
+  };
+  const migrated = migrateSettings(base);
+  expect(migrated).toMatchObject({
+    accountId: "60392473",
+    voiceId: "pack:silas",
+    alertSpeed: 1.75,
+    clockSyncSeconds: base.clockSyncSeconds,
+    clockGraceSeconds: base.clockGraceSeconds,
+  });
+  expect(migrateSettings({ ...base, voiceId: "pack:bf_emma" }).voiceId).toBe(
+    "pack:june",
+  );
+});

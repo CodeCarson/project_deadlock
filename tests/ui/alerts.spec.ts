@@ -47,7 +47,7 @@ async function observeAudio(page: Page) {
   });
 }
 
-test("ten bundled voices actually play, preserve pitch at speed, and persist alongside sound choices", async ({
+test("both bundled voices actually play, preserve pitch at speed, and persist alongside sound choices", async ({
   page,
 }) => {
   await observeAudio(page);
@@ -99,32 +99,23 @@ test("ten bundled voices actually play, preserve pitch at speed, and persist alo
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Notification sound")).toHaveValue("radio");
   await expect(page.getByLabel("Voice", { exact: true })).toHaveValue(
-    "pack:bf_emma",
+    "pack:june",
   );
   await expect(page.getByLabel("Alert speed")).toHaveValue("1.75");
   await page.getByRole("button", { name: "Natural pace · 1×" }).click();
   await expect(page.getByLabel("Alert speed")).toHaveValue("1");
 });
 
-test("system voices still preview and custom text falls back from a bundled voice", async ({
+test("only two voices are selectable and custom text still speaks", async ({
   page,
 }) => {
   await observeAudio(page);
   await page.goto("/");
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByLabel("Voice", { exact: true }).selectOption("Zira");
-  await page.getByRole("button", { name: "Test voice", exact: true }).click();
-  await expect
-    .poll(() => page.evaluate(() => (window as any).spoken.at(-1)))
-    .toEqual({
-      text: "Bridge buffs ready",
-      rate: 1.35,
-      voice: "Zira",
-    });
-  await page.reload();
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await expect(page.getByLabel("Voice", { exact: true })).toHaveValue("Zira");
-  await page.getByLabel("Voice", { exact: true }).selectOption("pack:af_heart");
+  await expect(
+    page.getByLabel("Voice", { exact: true }).locator("option"),
+  ).toHaveCount(2);
+  await page.getByLabel("Voice", { exact: true }).selectOption("pack:june");
   await page.getByLabel("Speak event announcements").check();
   await page.getByRole("button", { name: "Live Match", exact: true }).click();
   await page.getByRole("button", { name: "Add reminder", exact: true }).click();
@@ -139,4 +130,9 @@ test("system voices still preview and custom text falls back from a bundled voic
     .poll(() => page.evaluate(() => (window as any).spoken.at(-1)?.text))
     .toBe("Drink water ready");
   expect(await page.evaluate(() => (window as any).recordings)).toEqual([]);
+});
+
+// Existing fixtures isolate unavailable secondary services; dedicated history tests mock both.
+test.beforeEach(async ({ page }) => {
+  await page.route("https://statlocker.gg/**", (route) => route.abort());
 });

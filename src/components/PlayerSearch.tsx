@@ -97,6 +97,14 @@ export function PlayerSearch({
             void select(suggestions[active].account_id);
             return;
           }
+          if (
+            suggestions.length === 1 &&
+            suggestions[0].personaname.toLowerCase() ===
+              input.trim().toLowerCase()
+          ) {
+            void select(suggestions[0].account_id);
+            return;
+          }
           try {
             void select(parseAccount(input));
           } catch {
@@ -207,9 +215,10 @@ export function PlayerSearch({
           </div>
         )}
         <small>
-          Steam names show indexed suggestions after two characters. Confirm the
-          account ID when names match. IDs, SteamID64, Steam [U:1:…] and numeric
-          profile links still work. No login or API key needed.
+          Enter your Steam display name and choose your profile. Matching names
+          can belong to different people; check the avatar and account ID. We
+          collect available matches into one archive. Steam IDs and numeric
+          profile links also work.
         </small>
       </form>
     </section>

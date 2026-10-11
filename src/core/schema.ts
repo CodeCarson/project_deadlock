@@ -163,7 +163,7 @@ export const settingsSchema = z
       "whistle",
     ]),
     speech: z.boolean(),
-    voiceId: z.string().max(300).default(""),
+    voiceId: z.string().max(300).default("pack:silas"),
     voiceStyle: z.enum(["operator", "lookout"]).default("operator"),
     alertSpeed: z.number().finite().min(0.75).max(2).default(1.35),
     autoRefreshStats: z.boolean().default(true),

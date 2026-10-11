@@ -110,13 +110,42 @@ export function HistoryCoverage({
         />
       )}
       <p>
-        {result.historySource === "steam"
-          ? "Steam fetch received."
-          : "Indexed history only — Steam access has not been confirmed."}{" "}
+        Matches from available sources are merged by match ID and kept locally.
         {missing
-          ? "Rank and team picks use this partial archive."
-          : "Reaching your stated total does not verify every record."}
+          ? " Rank and team picks use this partial archive."
+          : " Coverage is not guaranteed by any one provider."}
       </p>
+      {result.historyChecks && (
+        <div className="history-sources" aria-label="Match history sources">
+          {result.historyChecks.map((check) => (
+            <div key={check.provider}>
+              <strong>{check.provider}</strong>
+              <span
+                className={`data-pill ${check.status !== "available" ? "stale" : ""}`}
+              >
+                {check.status === "available"
+                  ? `${check.count} games returned`
+                  : check.status === "partial"
+                    ? "Partly available"
+                    : "Unavailable"}
+              </span>
+              <small>{check.message}</small>
+              {check.reportedTotal !== null && (
+                <small>
+                  Provider aggregate: {check.reportedTotal} games. This may
+                  cover a different mode or date range than the returned
+                  matches.
+                </small>
+              )}
+            </div>
+          ))}
+          <small>
+            Name search finds your account. Match coverage depends on the
+            sources that have indexed your games. Statlocker may require API
+            access; an unavailable source leaves your saved matches intact.
+          </small>
+        </div>
+      )}
       <div className="history-controls">
         <label>
           Career total shown in game
@@ -200,8 +229,9 @@ export function HistoryCoverage({
           </small>
         )}
         <p className="muted">
-          The API has no history pagination. A rebuild needs bot access; missing
-          records cannot be created by repeated Refresh.{" "}
+          Deadlock API follows Steam’s older-history cursor during a full
+          rebuild, when bot access is active. Refresh also checks Statlocker’s
+          separate index; a provider may still lack older or private games.{" "}
           <a
             href="https://api.deadlock-api.com/docs"
             target="_blank"
@@ -209,6 +239,27 @@ export function HistoryCoverage({
           >
             Provider documentation
           </a>
+        </p>
+      </details>
+      <details>
+        <summary>Keep future matches indexed</summary>
+        <p>
+          The provider’s optional ingest tool reads replay references from
+          Steam’s local HTTP cache and submits match IDs and replay salts.
+          Watching an older replay can expose an older match, if the replay is
+          still available. It cannot reconstruct expired replays.
+        </p>
+        <a
+          className="button secondary small"
+          href="https://github.com/deadlock-api/deadlock-api-ingest"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Read ingest setup and data sharing
+        </a>
+        <p className="muted">
+          This is a separate optional tool. Review its current Steam-session and
+          data-sharing instructions before installing.
         </p>
       </details>
       <details>

@@ -72,7 +72,11 @@ export function TeamPlanner({
     });
     try {
       const [history, profile] = await Promise.all([
-        bridge.request({ resource: "history", accountId: id }),
+        bridge.request({
+          resource: "history",
+          accountId: id,
+          includeStatlocker: true,
+        }),
         bridge.request({ resource: "profile", accountId: id }),
       ]);
       const matches = z.array(matchSchema).parse(history.data);
